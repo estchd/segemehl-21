@@ -1,0 +1,7 @@
+/target
+*.lock
+*.bam
+*.bai
+*.sam
+/frontend/www/node_modules
+package-lock.json

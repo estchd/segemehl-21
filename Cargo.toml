@@ -1,0 +1,13 @@
+[workspace]
+
+members = [
+    "backend",
+    "core",
+    "frontend"
+]
+
+[profile.release.package.segemehl_21_backend]
+debug = true
+
+[profile.release.package.segemehl_21_frontend]
+opt-level = "s"
