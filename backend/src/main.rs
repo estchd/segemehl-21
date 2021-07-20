@@ -116,7 +116,7 @@ mod test {
     fn iter_speed_test() {
         let total_records = AtomicUsize::new(0);
 
-        let reader = BamReader::from_path("rep1.bam",8u16).unwrap();
+        let reader = BamReader::from_path("../../example_files/rep1.bam", 8u16).unwrap();
 
         reader.par_bridge().into_par_iter().filter_map(|item| item.ok()).for_each(|_record| {
             let _current_total = total_records.fetch_add(1, Ordering::Relaxed);
