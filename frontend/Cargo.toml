@@ -16,6 +16,7 @@ segemehl_21_core = {version = "0.1.0", path = "../core"}
 web-sys = {version = "0.3.51", features = ["File", "HtmlSelectElement", "HtmlInputElement", "Document", "Element", "EventTarget", "FileList", "MouseEvent", "DomRect"]}
 js-sys = "0.3.51"
 wasm-bindgen =  {version = "0.2.63", features = ["serde-serialize"]}
+wasm-bindgen-futures = "0.4.25"
 console_error_panic_hook = { version = "0.1.6", optional = true }
 wee_alloc = { version = "0.4.5" }
 

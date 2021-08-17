@@ -1,14 +1,7 @@
-.fade-base {
-    opacity: 1;
-    transition: opacity 1s;
-    -webkit-transition: opacity 1s;
-    -moz-transition: opacity 1s;
-}
-
-.fade {
-    opacity: 0;
-    pointer-events: none;
-}
+@import url("dropdown.css");
+@import url("fade.css");
+@import url("close.css");
+@import url("loader.css");
 
 .overlay-fixed {
     position: fixed;
@@ -48,4 +41,32 @@
 .sticky {
     position: fixed;
     top: 0;
+}
+
+.no-decoration {
+    text-decoration: none;
+}
+
+.no-list-style {
+    list-style-type: none;
+}
+
+.file-list-item {
+
+}
+
+.file-list-item-name {
+
+}
+
+.file-list-item-status {
+
+}
+
+.file-list-item-remove-button {
+
+}
+
+.file-list-add-button {
+
 }

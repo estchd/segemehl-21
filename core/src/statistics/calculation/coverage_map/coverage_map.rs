@@ -322,7 +322,7 @@ impl CoverageMap {
 	pub fn get_total_covered_length(&self) -> u32 {
 		self.entries
 			.iter()
-			.map(|entry| ((entry.end - entry.start) + 1))
+			.map(|entry| ((entry.end.saturating_sub(entry.start)) + 1))
 			.sum()
 	}
 }

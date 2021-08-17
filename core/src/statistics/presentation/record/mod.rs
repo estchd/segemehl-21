@@ -7,7 +7,7 @@ use std::convert::TryFrom;
 
 pub mod flags;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct PresentationRecord {
     name: String,
     flags: PresentationFlags,
@@ -15,6 +15,32 @@ pub struct PresentationRecord {
     length: u32,
     start: u32,
     end: u32
+}
+
+impl PresentationRecord {
+    pub fn get_name(&self) -> String {
+        self.name.clone()
+    }
+
+    pub fn get_flags(&self) -> PresentationFlags {
+        self.flags
+    }
+
+    pub fn get_mapping_quality(&self) -> u8 {
+        self.mapping_quality
+    }
+
+    pub fn get_length(&self) -> u32 {
+        self.length
+    }
+
+    pub fn get_start(&self) -> u32 {
+        self.start
+    }
+
+    pub fn get_end(&self) -> u32 {
+        self.end
+    }
 }
 
 impl TryFrom<Record> for PresentationRecord {

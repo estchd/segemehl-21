@@ -8,7 +8,9 @@ pub mod map;
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PresentationAssembler {
     qname: String,
-    associated_records: Vec<PresentationRecord>
+    forward_strand_records: Vec<PresentationRecord>,
+    reverse_strand_records: Vec<PresentationRecord>,
+    unmapped_records: Vec<PresentationRecord>
 }
 
 impl TryFrom<CalculationAssembler> for PresentationAssembler {
@@ -22,9 +24,32 @@ impl TryFrom<CalculationAssembler> for PresentationAssembler {
                 record.try_into()
             ).collect::<Result<Vec<PresentationRecord>, ()>>()?;
 
+        let mut forward_strand_records: Vec<PresentationRecord> = Vec::new();
+        let mut reverse_strand_records: Vec<PresentationRecord> = Vec::new();
+        let mut unmapped_records: Vec<PresentationRecord> = Vec::new();
+
+        for record in associated_records {
+            let mapped = record.get_flags().get_is_mapped();
+            let reverse_strand = record.get_flags().get_is_reverse_strand();
+
+            if !mapped {
+                unmapped_records.push(record);
+                continue;
+            }
+
+            if reverse_strand {
+                reverse_strand_records.push(record)
+            }
+            else {
+                forward_strand_records.push(record)
+            }
+        }
+
         Ok(Self {
             qname,
-            associated_records
+            forward_strand_records,
+            reverse_strand_records,
+            unmapped_records
         })
     }
 }

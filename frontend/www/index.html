@@ -1,152 +1,196 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Plotters WebAssembly Demo</title>
-  <link rel="stylesheet" href="./style.css">
-</head>
-<body>
-<noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
-<script src="./bootstrap.js"></script>
-<main>
-  <div id="top-div" class="sticky" style="z-index: 1; top: 0; left: 0; right: 0; height: 40px; background: white; opacity: 1; border-bottom: 2px gray inset; display: flex; flex-direction: row;">
-    <div style="flex-grow: 1; display: flex; align-items: center">
-      <h2 style="margin: auto">Input</h2></div>
-    <div style="flex-grow: 1; display: flex; align-items: center">
-      <input style="margin: auto" id="file_input" type="file"/>
-    </div>
-    <div style="flex-grow: 1; display: flex; align-items: center">
-      <label style="margin: 0 5px 0 auto" for="chromosome_select">Selected Chromosome: </label>
-      <select style="margin: 0 auto 0 0" id="chromosome_select"></select>
-    </div>
-  </div>
-  <div id="main-content" style="position: absolute; top: 0; left: 10px; right: 0; bottom: 0; z-index: 0;">
-    <div style="height: 54px"></div>
-    <h1>Plotters WebAssembly Demo</h1>
-    <div id="output-content">
-      <h2>Output</h2>
-      <div id="output-numerics">
-        <h3>Numerics</h3>
+    <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
 
-        <h4>Per File Statistics</h4>
+        <title>Segemehl 21</title>
 
-        <p>Number of Reads in File: <output id="total-read-number-output"></output></p>
-        <p>Total Length of Reads in File: <output id="total-read-length-output"></output></p>
-        <p>Shortest Length of a Read in File: <output id="shortest-read-length-output"></output></p>
-        <p>Longest Length of a Read in File: <output id="longest-read-length-output"></output></p>
-        <p>Median Length of a Read in File: <output id="median-read-length-output"></output></p>
-        <p>Mode Length of a Read in File: <output id="mode-read-length-output"></output></p>
-        <p>Mean Length of a Read in File: <output id="mean-read-length-output"></output></p>
-
-        <br/>
-
-        <h4>Chromosome Statistics</h4>
-
-        <p>Total Length of Chromosomes: <output id="total-chromosome-length-output"></output></p>
-        <p>Median Length of Chromosomes: <output id="median-chromosome-length-output"></output></p>
-        <p>Mode Length of Chromosomes: <output id="mode-chromosome-length-output"></output></p>
-        <p>Mean Length of Chromosomes: <output id="mean-chromosome-length-output"></output></p>
-        <p>Length of Shortest Chromosome: <output id="shortest-chromosome-length-output"></output></p>
-        <p>Length of Longest Chromosome: <output id="longest-chromosome-length-output"></output></p>
-
-        <br/>
-
-        <h4>Chromosome Coverage Statistics</h4>
-
-        <p>Median Coverage of Chromosomes: <output id="median-chromosome-coverage-output"></output>%</p>
-        <p>Mean Coverage of Chromosomes: <output id="mean-chromosome-coverage-output"></output>%</p>
-        <p>Least Coverage of Chromosomes: <output id="least-chromosome-coverage-output"></output>%</p>
-        <p>Most Coverage of Chromosomes: <output id="most-chromosome-coverage-output"></output>%</p>
-
-        <br/>
-
-        <h4>Per Chromosome Statistics</h4>
-
-        <p>Median Number of Reads per Chromosome: <output id="median-number-of-reads-per-chromosome-output"></output></p>
-        <p>Mode Number of Reads per Chromosome: <output id="mode-number-of-reads-per-chromosome-output"></output></p>
-        <p>Mean Number of Reads per Chromosome: <output id="mean-number-of-reads-per-chromosome-output"></output></p>
-      </div>
-      <br/>
-      <div id="output-plots">
-        <h3>Plots</h3>
-        <div style="display: block; width: 100%">
-          <div style="display: inline; margin-left: 100px">
-            <h4 style="width: 600px">Test Plot</h4>
-            <p>Logarithmic Scale: <input id="test_logarithmic_toggle" type="checkbox"/></p>
-            <p>Logarithm Base: <input id="test_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-            <canvas id="test_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <h4 style="width: 600px">Length of Chromosomes</h4>
-            <p>Logarithmic Scale: <input id="length_of_chromosomes_logarithmic_toggle" type="checkbox"/></p>
-            <p>Logarithm Base: <input id="length_of_chromosomes_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-            <canvas id="length_of_chromosomes_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <h4 style="width: 600px">Covered Length of Chromosomes</h4>
-            <p>Logarithmic Scale: <input id="covered_length_of_chromosomes_logarithmic_toggle" type="checkbox"/></p>
-            <p>Logarithm Base: <input id="covered_length_of_chromosomes_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-            <canvas id="covered_length_of_chromosomes_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <h4 style="width: 600px">Coverage of Chromosomes</h4>
-            <canvas id="coverage_per_chromosome_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <h4 style="width: 600px">Coverage per Bin on selected Chromosome</h4>
-            <select id="coverage_per_bin_on_selected_chromosome_stat">
-              <option value="Total">Total</option>
-              <option value="Average">Average</option>
-            </select>
-            <canvas id="coverage_per_bin_on_selected_chromosome_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <p>Logarithmic Scale: <input id="file_quality_frequency_map_logarithmic_toggle" type="checkbox"/></p>
-            <p>Logarithm Base: <input id="file_quality_frequency_map_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-            <h4 style="width: 600px">Quality Frequency Map for Whole File</h4>
-            <canvas id="file_quality_frequency_map_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <p>Logarithmic Scale: <input id="selected_chromosome_quality_frequency_map_logarithmic_toggle" type="checkbox"/></p>
-            <p>Logarithm Base: <input id="selected_chromosome_quality_frequency_map_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-            <h4 style="width: 600px">Quality Frequency Map for selected Chromosome</h4>
-            <canvas id="selected_chromosome_quality_frequency_map_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <h4 style="width: 600px">Number of Reads per Chromosome</h4>
-            <p>Logarithmic Scale: <input id="reads_per_chromosome_logarithmic_toggle" type="checkbox"/></p>
-            <p>Logarithm Base: <input id="reads_per_chromosome_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-            <canvas id="reads_per_chromosome_canvas" width="1200" height="600"></canvas>
-          </div>
-          <div style="display: inline">
-            <h4 style="width: 600px">Length of a Read per Chromosome</h4>
-            <label for="length_of_read_per_chromosome_stat">Calculated Stat: </label>
-            <select id="length_of_read_per_chromosome_stat">
-              <option value="Mean">Mean</option>
-              <option value="Mode">Mode</option>
-              <option value="Median">Median</option>
-              <option value="Shortest">Shortest</option>
-              <option value="Longest">Longest</option>
-            </select>
-            <p>Logarithmic Scale: <input id="length_of_read_per_chromosome_logarithmic_toggle" type="checkbox"/></p>
-            <p>Logarithm Base: <input id="length_of_read_per_chromosome_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-            <canvas id="length_of_read_per_chromosome_canvas" width="1200" height="600"></canvas>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  <div id="main-overlay" class="overlay-fixed fade-base fade">
-    <div id="main-overlay-blur" class="overlay-fixed blur-overlay" style="z-index: 2;"></div>
-    <div id="main-overlay-content-outer" class="overlay-fixed" style="display: flex; z-index: 3;">
-      <div id="main-overlay-content-inner" class="center" style="width: 400px; height: 200px; background: white;">
-        <div class="center-text-wrapper">
-          <h1>New Statistics File is being parsed, this may take a minute...</h1>
-        </div>
-      </div>
-    </div>
-  </div>
-</main>
-</body>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-EVSTQN3/azprG1Anm3QDgpJLIm9Nao0Yz1ztcQTwFspd3yD65VohhpuuCOmLASjC" crossorigin="anonymous">
+    </head>
+    <body>
+        <noscript>This page contains webassembly and javascript content, please enable javascript in your browser.</noscript>
+        <script src="bootstrap.js"></script>
+        <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark px-3">
+            <a class="navbar-brand" href="#">Segemehl 21</a>
+            <div class="collapse navbar-collapse w-100 h-100 d-flex flex-row">
+                <div class="dropdown flex-grow-1">
+                    <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                        Files
+                    </button>
+                    <ul id="file-dropdown" class="dropdown-menu w-100 border border-dark border-2" aria-labelledby="dropdownMenuButton1">
+                    </ul>
+                    <input id="file_input" multiple style="display:none" type="file"/>
+                    <template id="file-dropdown-list-item-template">
+                        <li class="file-list-item dropdown-item-text d-flex flex-row justify-content-between">
+                            <div class="file-list-item-name d-flex flex-column justify-content-center">
+                            </div>
+                            <div class="file-list-item-status d-flex flex-column justify-content-center">
+                            </div>
+                        </li>
+                        <li class="dropdown-divider"></li>
+                    </template>
+                    <template id="file-dropdown-add-button-template">
+                        <li class="dropdown-item-text">
+                            <button class="file-list-add-button btn btn-primary w-100">Add File</button>
+                        </li>
+                    </template>
+                    <template id="file-dropdown-remove-button-template">
+                        <button type="button" class="file-list-item-remove-button btn-close" aria-label="Remove File"></button>
+                    </template>
+                    <template id="file-dropdown-loading-status-template">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                    </template>
+                </div>
+                <div class="w-25"></div>
+                <label for="chromosome-select" class="text-light me-2">
+                    Selected Chromosome:
+                </label>
+                <select id="chromosome-select" class="flex-grow-1 form-select w-auto">
+                </select>
+                <template id="chromosome-select-template">
+                    <option></option>
+                </template>
+            </div>
+        </nav>
+        <main style="margin-top: 60px;margin-left:10px">
+            <div style="z-index: 0;">
+                <ul class="nav nav-tabs" id="main-tab" role="tablist">
+                    <li class="nav-item" role="presentation">
+                        <button class="nav-link active" id="numerics-tab" data-bs-toggle="tab" data-bs-target="#numerics-tab-content" type="button" role="tab" aria-controls="numerics-tab" aria-selected="true">Numerics</button>
+                    </li>
+                    <li>
+                        <button class="nav-link" id="plots-tab" data-bs-toggle="tab" data-bs-target="#plots-tab-content" type="button" role="tab" aria-controls="plots-tab" aria-selected="false">Plots</button>
+                    </li>
+                </ul>
+                <div class="tab-content" id="main-tab-content">
+                    <div class="tab-pane fade show active" id="numerics-tab-content" role="tabpanel" aria-labelledby="numerics-tab">
+                        <div class="border border-dark border-1">
+                            <table class="table table-responsive table-striped">
+                                <thead>
+                                <tr id="numeric-statistics-per-file-file-row"></tr>
+                                </thead>
+                                <tbody>
+                                <tr id="numeric-statistics-number-of-reads-row"></tr>
+                                <tr id="numeric-statistics-total-read-length-row"></tr>
+                                <tr id="numeric-statistics-shortest-read-length-row"></tr>
+                                <tr id="numeric-statistics-longest-read-length-row"></tr>
+                                <tr id="numeric-statistics-median-read-length-row"></tr>
+                                <tr id="numeric-statistics-mode-read-length-row"></tr>
+                                <tr id="numeric-statistics-mean-read-length-row"></tr>
+                                </tbody>
+                                <thead>
+                                <tr id="numeric-statistics-chromosome-file-row"></tr>
+                                </thead>
+                                <tbody>
+                                <tr id="numeric-statistics-total-length-of-chromosomes-row"></tr>
+                                <tr id="numeric-statistics-median-length-of-chromosomes-row"></tr>
+                                <tr id="numeric-statistics-mode-length-of-chromosomes-row"></tr>
+                                <tr id="numeric-statistics-mean-length-of-chromosomes-row"></tr>
+                                <tr id="numeric-statistics-shortest-chromosome-length-row"></tr>
+                                <tr id="numeric-statistics-longest-chromosome-length-row"></tr>
+                                </tbody>
+                                <thead>
+                                <tr id="numeric-statistics-chromosome-coverage-file-row"></tr>
+                                </thead>
+                                <tbody>
+                                <tr id="numeric-statistics-median-chromosome-coverage-row"></tr>
+                                <tr id="numeric-statistics-mean-chromosome-coverage-row"></tr>
+                                <tr id="numeric-statistics-least-chromosome-coverage-row"></tr>
+                                <tr id="numeric-statistics-most-chromosome-coverage-row"></tr>
+                                </tbody>
+                                <thead>
+                                <tr id="numeric-statistics-per-chromosome-file-row"></tr>
+                                </thead>
+                                <tbody>
+                                <tr id="numeric-statistics-median-number-of-reads-per-chromosome-row"></tr>
+                                <tr id="numeric-statistics-mode-number-of-reads-per-chromosome-row"></tr>
+                                <tr id="numeric-statistics-mean-number-of-reads-per-chromosome-row"></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div class="tab-pane fade" id="plots-tab-content" role="tabpanel" aria-labelledby="plots-tab">
+                        <div style="display: block; width: 100%">
+                            <div style="display: inline; margin-left: 100px">
+                                <h4 style="width: 600px">Test Plot</h4>
+                                <p>Logarithmic Scale: <input id="test_logarithmic_toggle" type="checkbox"/></p>
+                                <p>Logarithm Base: <input id="test_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                <canvas id="test_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <h4 style="width: 600px">Length of Chromosomes</h4>
+                                <p>Logarithmic Scale: <input id="length_of_chromosomes_logarithmic_toggle" type="checkbox"/></p>
+                                <p>Logarithm Base: <input id="length_of_chromosomes_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                <canvas id="length_of_chromosomes_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <h4 style="width: 600px">Covered Length of Chromosomes</h4>
+                                <p>Logarithmic Scale: <input id="covered_length_of_chromosomes_logarithmic_toggle" type="checkbox"/></p>
+                                <p>Logarithm Base: <input id="covered_length_of_chromosomes_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                <canvas id="covered_length_of_chromosomes_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <h4 style="width: 600px">Coverage of Chromosomes</h4>
+                                <canvas id="coverage_per_chromosome_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <h4 style="width: 600px">Coverage per Bin on selected Chromosome</h4>
+                                <select id="coverage_per_bin_on_selected_chromosome_stat">
+                                    <option value="Total">Total</option>
+                                    <option value="Average">Average</option>
+                                </select>
+                                <canvas id="coverage_per_bin_on_selected_chromosome_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <p>Logarithmic Scale: <input id="file_quality_frequency_map_logarithmic_toggle" type="checkbox"/></p>
+                                <p>Logarithm Base: <input id="file_quality_frequency_map_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                <h4 style="width: 600px">Quality Frequency Map for Whole File</h4>
+                                <canvas id="file_quality_frequency_map_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <p>Logarithmic Scale: <input id="selected_chromosome_quality_frequency_map_logarithmic_toggle" type="checkbox"/></p>
+                                <p>Logarithm Base: <input id="selected_chromosome_quality_frequency_map_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                <h4 style="width: 600px">Quality Frequency Map for selected Chromosome</h4>
+                                <canvas id="selected_chromosome_quality_frequency_map_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <h4 style="width: 600px">Number of Reads per Chromosome</h4>
+                                <p>Logarithmic Scale: <input id="reads_per_chromosome_logarithmic_toggle" type="checkbox"/></p>
+                                <p>Logarithm Base: <input id="reads_per_chromosome_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                <canvas id="reads_per_chromosome_canvas" width="1200" height="600"></canvas>
+                            </div>
+                            <div style="display: inline">
+                                <h4 style="width: 600px">Length of a Read per Chromosome</h4>
+                                <label for="length_of_read_per_chromosome_stat">Calculated Stat: </label>
+                                <select id="length_of_read_per_chromosome_stat">
+                                    <option value="Mean">Mean</option>
+                                    <option value="Mode">Mode</option>
+                                    <option value="Median">Median</option>
+                                    <option value="Shortest">Shortest</option>
+                                    <option value="Longest">Longest</option>
+                                </select>
+                                <p>Logarithmic Scale: <input id="length_of_read_per_chromosome_logarithmic_toggle" type="checkbox"/></p>
+                                <p>Logarithm Base: <input id="length_of_read_per_chromosome_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                <canvas id="length_of_read_per_chromosome_canvas" width="1200" height="600"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div id="main-overlay" class="overlay-fixed fade-base fade">
+                <div id="main-overlay-blur" class="overlay-fixed blur-overlay" style="z-index: 2;"></div>
+                <div id="main-overlay-content-outer" class="overlay-fixed" style="display: flex; z-index: 3;">
+                    <div id="main-overlay-content-inner" class="center" style="width: 400px; height: 200px; background: white;">
+                        <div class="center-text-wrapper">
+                            <h1>New Statistics File is being parsed, this may take a minute...</h1>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+    </body>
 </html>

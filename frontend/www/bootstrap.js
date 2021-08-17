@@ -6,7 +6,6 @@ async function init() {
         const [
             {
                 main,
-                parse_data_file,
                 generate_per_file_stats,
                 get_chromosome_names,
                 update_plot_class,
@@ -21,18 +20,21 @@ async function init() {
                 draw_mean_length_of_reads_per_chromosome_plot,
                 draw_mode_length_of_reads_per_chromosome_plot,
                 draw_shortest_length_of_reads_per_chromosome_plot,
-                draw_longest_length_of_reads_per_chromosome_plot
+                draw_longest_length_of_reads_per_chromosome_plot,
+                setup_file_list,
+                add_file,
+                process_file,
+                remove_file,
+                get_file_list
             },
             {
                 setup
             }
         ] = await Promise.all([
-
-            import("segemehl_21_frontend"),
-            import("./index.js"),
+            import("/../pkg"),
+            import("./index"),
         ]);
         setup(
-            parse_data_file,
             generate_per_file_stats,
             get_chromosome_names,
             update_plot_class,
@@ -47,7 +49,12 @@ async function init() {
             draw_mean_length_of_reads_per_chromosome_plot,
             draw_mode_length_of_reads_per_chromosome_plot,
             draw_shortest_length_of_reads_per_chromosome_plot,
-            draw_longest_length_of_reads_per_chromosome_plot
+            draw_longest_length_of_reads_per_chromosome_plot,
+            setup_file_list,
+            add_file,
+            process_file,
+            remove_file,
+            get_file_list
         );
         main();
     } else {
@@ -55,7 +62,6 @@ async function init() {
             {
                 default: init,
                 main,
-                parse_data_file,
                 generate_per_file_stats,
                 get_chromosome_names,
                 update_plot_class,
@@ -70,18 +76,22 @@ async function init() {
                 draw_mean_length_of_reads_per_chromosome_plot,
                 draw_mode_length_of_reads_per_chromosome_plot,
                 draw_shortest_length_of_reads_per_chromosome_plot,
-                draw_longest_length_of_reads_per_chromosome_plot
+                draw_longest_length_of_reads_per_chromosome_plot,
+                setup_file_list,
+                add_file,
+                process_file,
+                remove_file,
+                get_file_list
             },
             {
                 setup
             }
         ] = await Promise.all([
-            import("../pkg/segemehl_21_frontend.js"),
-            import("./index.js"),
+            import("/../pkg"),
+            import("./index"),
         ]);
         await init();
         setup(
-            parse_data_file,
             generate_per_file_stats,
             get_chromosome_names,
             update_plot_class,
@@ -96,7 +106,12 @@ async function init() {
             draw_mean_length_of_reads_per_chromosome_plot,
             draw_mode_length_of_reads_per_chromosome_plot,
             draw_shortest_length_of_reads_per_chromosome_plot,
-            draw_longest_length_of_reads_per_chromosome_plot
+            draw_longest_length_of_reads_per_chromosome_plot,
+            setup_file_list,
+            add_file,
+            process_file,
+            remove_file,
+            get_file_list
         );
         main();
     }
