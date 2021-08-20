@@ -17,6 +17,7 @@
     "webpack"
   ],
   "dependencies": {
+    "chart.js": "^3.5.1",
     "segemehl_21_frontend": "file:../pkg"
   },
   "devDependencies": {

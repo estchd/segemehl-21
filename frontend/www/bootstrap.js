@@ -8,24 +8,14 @@ async function init() {
                 main,
                 generate_per_file_stats,
                 get_chromosome_names,
-                update_plot_class,
-                draw_complete_quality_frequency_plot,
-                draw_single_chromosome_quality_frequency_plot,
-                draw_coverage_per_bin_plot,
-                draw_length_of_chromosome_plot,
-                draw_covered_length_of_chromosome_plot,
-                draw_number_of_reads_per_chromosome_plot,
-                draw_coverage_of_chromosomes_plot,
-                draw_median_length_of_reads_per_chromosome_plot,
-                draw_mean_length_of_reads_per_chromosome_plot,
-                draw_mode_length_of_reads_per_chromosome_plot,
-                draw_shortest_length_of_reads_per_chromosome_plot,
-                draw_longest_length_of_reads_per_chromosome_plot,
                 setup_file_list,
                 add_file,
                 process_file,
                 remove_file,
-                get_file_list
+                get_file_list,
+                get_dataset,
+                get_file_color,
+                update_file_color
             },
             {
                 setup
@@ -37,24 +27,14 @@ async function init() {
         setup(
             generate_per_file_stats,
             get_chromosome_names,
-            update_plot_class,
-            draw_complete_quality_frequency_plot,
-            draw_single_chromosome_quality_frequency_plot,
-            draw_coverage_per_bin_plot,
-            draw_length_of_chromosome_plot,
-            draw_covered_length_of_chromosome_plot,
-            draw_number_of_reads_per_chromosome_plot,
-            draw_coverage_of_chromosomes_plot,
-            draw_median_length_of_reads_per_chromosome_plot,
-            draw_mean_length_of_reads_per_chromosome_plot,
-            draw_mode_length_of_reads_per_chromosome_plot,
-            draw_shortest_length_of_reads_per_chromosome_plot,
-            draw_longest_length_of_reads_per_chromosome_plot,
             setup_file_list,
             add_file,
             process_file,
             remove_file,
-            get_file_list
+            get_file_list,
+            get_dataset,
+            get_file_color,
+            update_file_color
         );
         main();
     } else {
@@ -64,24 +44,14 @@ async function init() {
                 main,
                 generate_per_file_stats,
                 get_chromosome_names,
-                update_plot_class,
-                draw_complete_quality_frequency_plot,
-                draw_single_chromosome_quality_frequency_plot,
-                draw_coverage_per_bin_plot,
-                draw_length_of_chromosome_plot,
-                draw_covered_length_of_chromosome_plot,
-                draw_number_of_reads_per_chromosome_plot,
-                draw_coverage_of_chromosomes_plot,
-                draw_median_length_of_reads_per_chromosome_plot,
-                draw_mean_length_of_reads_per_chromosome_plot,
-                draw_mode_length_of_reads_per_chromosome_plot,
-                draw_shortest_length_of_reads_per_chromosome_plot,
-                draw_longest_length_of_reads_per_chromosome_plot,
                 setup_file_list,
                 add_file,
                 process_file,
                 remove_file,
-                get_file_list
+                get_file_list,
+                get_dataset,
+                get_file_color,
+                update_file_color
             },
             {
                 setup
@@ -94,24 +64,14 @@ async function init() {
         setup(
             generate_per_file_stats,
             get_chromosome_names,
-            update_plot_class,
-            draw_complete_quality_frequency_plot,
-            draw_single_chromosome_quality_frequency_plot,
-            draw_coverage_per_bin_plot,
-            draw_length_of_chromosome_plot,
-            draw_covered_length_of_chromosome_plot,
-            draw_number_of_reads_per_chromosome_plot,
-            draw_coverage_of_chromosomes_plot,
-            draw_median_length_of_reads_per_chromosome_plot,
-            draw_mean_length_of_reads_per_chromosome_plot,
-            draw_mode_length_of_reads_per_chromosome_plot,
-            draw_shortest_length_of_reads_per_chromosome_plot,
-            draw_longest_length_of_reads_per_chromosome_plot,
             setup_file_list,
             add_file,
             process_file,
             remove_file,
-            get_file_list
+            get_file_list,
+            get_dataset,
+            get_file_color,
+            update_file_color
         );
         main();
     }

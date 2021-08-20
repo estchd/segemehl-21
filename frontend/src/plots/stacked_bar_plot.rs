@@ -18,7 +18,7 @@ pub struct StackedBarPlot {
 	pub(crate) base: PlotBase,
 	pub(crate) canvas_id: String,
 	pub(crate) dataset_name: String,
-	pub(crate) colors: Vec<RGBColor>,
+	pub(crate) colors: Vec<RGBColor>
 }
 
 impl StackedBarPlot {
@@ -138,7 +138,7 @@ impl Plot for StackedBarPlot {
 			.map_err(|_| "Error getting Transformed Axes")?;
 
 		let file_names = FILE_LIST.lock().unwrap();
-		let file_names: Vec<String> = file_names.iter().filter(|(_, value)| {
+		let file_names: Vec<String> = file_names.iter().filter(|(_, (_,value))| {
 			value.is_some()
 		}).map(|(key,_)| key.clone()).collect();
 

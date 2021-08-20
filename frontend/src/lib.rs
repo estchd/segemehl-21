@@ -64,7 +64,7 @@ lazy_static! {
 #[wasm_bindgen]
 pub fn main() {
     set_panic_hook();
-    setup_plots();
+    //setup_plots();
 }
 
 fn setup_plots() {
@@ -102,7 +102,7 @@ fn setup_test_plot() -> Result<(),()> {
         .set_y_axis(Some(y_axis))
         .with_title("Test Plot".to_string())
         .with_transformer(Arc::from(test_logarithmic_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("test_canvas".to_string(), "test_dataset".to_string())
         .map_err(|_| ())?;
@@ -154,7 +154,7 @@ fn setup_length_of_chromosomes_plot() -> Result<(), ()> {
         .set_y_axis(Some(y_axis))
         .with_title("Length of Chromosomes".to_string())
         .with_transformer(Arc::from(logarithmic_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("length_of_chromosomes_canvas".to_string(), "length_of_chromosomes".to_string())
         .map_err(|_| ())?;
@@ -201,7 +201,7 @@ fn setup_covered_length_of_chromosomes_plot() -> Result<(), ()> {
         .set_y_axis(Some(y_axis))
         .with_title("Covered Length of Chromosomes".to_string())
         .with_transformer(Arc::from(logarithmic_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("covered_length_of_chromosomes_canvas".to_string(), "covered_length_of_chromosomes".to_string())
         .map_err(|_| ())?;
@@ -246,7 +246,7 @@ fn setup_coverage_per_chromosome_plot() -> Result<(), ()> {
         .set_y_axis(Some(y_axis))
         .with_title("Coverage per Chromosome".to_string())
         .with_transformer(Arc::from(percentage_transform))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("coverage_per_chromosome_canvas".to_string(), "coverage_per_chromosome".to_string())
         .map_err(|_| ())?;
@@ -284,7 +284,7 @@ fn setup_coverage_per_bin_on_selected_chromosome_plot() -> Result<(), String> {
         .set_y_axis(Some(y_axis))
         .with_title("Coverage per Bin".to_string())
         .with_transformer(Arc::from(select_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("coverage_per_bin_on_selected_chromosome_canvas".to_string(), "coverage_per_bin".to_string())
         .map_err(|_| "Error Building Plot")?;
@@ -334,7 +334,7 @@ fn setup_file_quality_frequency_map_plot() -> Result<(), ()> {
         .set_y_axis(Some(y_axis))
         .with_title("Quality Frequency Map for Complete File".to_string())
         .with_transformer(Arc::from(logarithmic_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("file_quality_frequency_map_canvas".to_string(), "file_quality_frequency_map".to_string())
         .map_err(|_| ())?;
@@ -387,7 +387,7 @@ fn setup_selected_chromosome_quality_frequency_map_plot() -> Result<(), ()> {
         .with_title("Quality Frequency Map for Selected Chromosome".to_string())
         .with_transformer(Arc::from(select_transformer))
         .with_transformer(Arc::from(logarithmic_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("selected_chromosome_quality_frequency_map_canvas".to_string(), "quality_frequency_map".to_string())
         .map_err(|_| ())?;
@@ -438,7 +438,7 @@ fn setup_reads_per_chromosome_plot() -> Result<(), ()> {
         .set_y_axis(Some(y_axis))
         .with_title("Number of Reads per Chromosome".to_string())
         .with_transformer(Arc::from(logarithmic_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("reads_per_chromosome_canvas".to_string(), "reads_per_chromosome".to_string())
         .map_err(|_| ())?;
@@ -491,7 +491,7 @@ fn setup_read_length_per_chromosome_plot() -> Result<(), ()> {
         .with_title("Number of Reads per Chromosome".to_string())
         .with_transformer(Arc::from(select_transformer))
         .with_transformer(Arc::from(logarithmic_transformer))
-        .stacked_bar_plot(get_data_repository())
+        .stacked_bar_plot(get_combined_data_repository())
         .with_colors(vec![BLUE,GREEN,YELLOW,RED,CYAN,MAGENTA,BLACK])
         .build("length_of_read_per_chromosome_canvas".to_string(), "length_of_read_per_chromosome".to_string())
         .map_err(|_| ())?;
@@ -567,7 +567,7 @@ pub fn register_plot_class_update(element_id: String, plot_class_name: String) -
     Ok(())
 }
 
-fn get_data_repository() -> Arc<dyn DataRepository + Send + Sync> {
+fn get_combined_data_repository() -> Arc<dyn DataRepository + Send + Sync> {
     Arc::from(AdapterRepository::from(DATA_REPOSITORY.clone()))
 }
 
@@ -671,15 +671,15 @@ pub struct StatisticsPerChromosomeDisplayData {
     pub mean_length_of_reads: f64
 }
 
-fn regenerate_data_repository() {
+fn regenerate_combined_data_repository() {
     let file_list = FILE_LIST.lock().unwrap();
 
     let mut repository = HashMapRepository::new();
 
     for (key, value) in file_list.iter() {
         match value {
-            None => continue,
-            Some(statistics) => {
+            (_,None) => continue,
+            (_,Some((statistics,_))) => {
                 let length_of_chromosomes_data: Vec<f64> = statistics.get_per_reference_data()
                                                                      .map(|item| item.get_reference_length())
                                                                      .map(|item| item as f64).collect();
@@ -798,11 +798,11 @@ fn regenerate_data_repository() {
 pub fn generate_per_file_stats(file_name: String) -> Option<PerFileStatistics> {
     let file_list = FILE_LIST.lock().unwrap();
 
-    let statistics = file_list.get(&file_name)?;
+    let (_,statistics) = file_list.get(&file_name)?;
 
     if statistics.is_none() {return None;}
 
-    let statistics = statistics.as_ref().unwrap();
+    let (statistics,_) = statistics.as_ref().unwrap();
 
     let total_chromosome_length: u64 = statistics.get_per_reference_data()
         .map(|item| item.get_reference_length() as u64)

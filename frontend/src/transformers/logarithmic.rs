@@ -114,7 +114,7 @@ pub struct PerFileLogarithmicTransformer {
 impl Transformer for PerFileLogarithmicTransformer {
 	fn transform_data(&self, data_repository: Arc<dyn DataRepository + Send + Sync>) -> Result<Arc<dyn DataRepository + Send + Sync>, String> {
 		let files = FILE_LIST.lock().unwrap();
-		let files = files.iter().filter(|(_,value)| value.is_some());
+		let files = files.iter().filter(|(_,(_,value))| value.is_some());
 
 		let toggle = self.get_toggle_value().map_err(|err| format!("Error getting toggle value: {}", err))?;
 		let base = self.get_base_value().map_err(|_| "Error getting base value")?;

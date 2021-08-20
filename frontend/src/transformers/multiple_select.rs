@@ -97,7 +97,7 @@ pub struct PerFileMultipleSelectTransformer {
 impl Transformer for PerFileMultipleSelectTransformer {
 	fn transform_data(&self, data_repository: Arc<dyn DataRepository + Send + Sync>) -> Result<Arc<dyn DataRepository + Send + Sync>, String> {
 		let files = FILE_LIST.lock().unwrap();
-		let files = files.iter().filter(|(_,value)| value.is_some());
+		let files = files.iter().filter(|(_,(_,value))| value.is_some());
 
 		let mut update_hashmap = HashMap::<String, Vec<f64>>::new();
 
