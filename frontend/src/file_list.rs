@@ -8,9 +8,6 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use crate::chromosome_list::{clear_chromosomes, has_chromosomes, set_chromosomes, check_chromosomes};
 use segemehl_21_core::statistics::presentation::PresentationData;
-use crate::{regenerate_combined_data_repository, update_plot_class};
-use crate::data_repository::DataRepository;
-use std::collections::hash_map::RandomState;
 
 lazy_static! {
 	pub static ref FILE_LIST: Mutex<HashMap<String, (String, Option<(PresentationData, HashMap<String, Vec<f64>>)>)>> = {
@@ -20,7 +17,7 @@ lazy_static! {
 
 #[wasm_bindgen]
 pub fn setup_file_list() {
-	FILE_LIST.lock().unwrap();
+	let _ = FILE_LIST.lock().unwrap();
 }
 
 #[wasm_bindgen]
