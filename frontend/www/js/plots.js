@@ -1,7 +1,7 @@
 import {get_chromosome_list, get_dataset, get_file_list} from "./wasm_binding";
 
 
-export function setup_plots() {
+export async function setup_plots() {
     setup_test_plot();
     setup_chromosome_length_plot();
     setup_chromosome_covered_length_plot();
@@ -12,27 +12,36 @@ export function setup_plots() {
     setup_number_reads_plot();
     setup_length_reads_plot();
 
-    update_all_plots();
+    await update_all_plots();
 
-    selected_chromosome.addEventListener("change", update_chromosome_dependent_plots);
+    selected_chromosome.addEventListener("change", () => update_chromosome_dependent_plots());
 }
 
-export function update_all_plots() {
+export async function update_all_plots() {
     chromosome_names = get_chromosome_list();
-    update_test_plot();
-    update_chromosome_length_plot();
-    update_chromosome_covered_length_plot();
-    update_chromosome_coverage_plot();
-    update_file_quality_plot();
-    update_number_reads_plot();
-    update_length_reads_plot();
 
-    update_chromosome_dependent_plots()
+    let promises = [];
+
+    promises.push(update_test_plot());
+    promises.push(update_chromosome_length_plot());
+    promises.push(update_chromosome_covered_length_plot());
+    promises.push(update_chromosome_coverage_plot());
+    promises.push(update_file_quality_plot());
+    promises.push(update_number_reads_plot());
+    promises.push(update_length_reads_plot());
+
+    promises.push(update_chromosome_dependent_plots());
+
+    await Promise.all(promises)
 }
 
-function update_chromosome_dependent_plots() {
-    update_chromosome_coverage_per_bin_plot();
-    update_chromosome_quality_plot();
+async function update_chromosome_dependent_plots() {
+    let promises = [];
+
+    promises.push(update_chromosome_coverage_per_bin_plot());
+    promises.push(update_chromosome_quality_plot());
+
+    await Promise.all(promises);
 }
 
 const selected_chromosome = document.getElementById("chromosome-select");
@@ -82,7 +91,7 @@ function setup_test_plot() {
     );
 }
 
-function update_test_plot() {
+async function update_test_plot() {
     if (test_plot) {
         test_plot.update();
     }
@@ -132,10 +141,10 @@ function setup_chromosome_length_plot() {
         config
     );
 
-    chromosome_length_logarithmic.addEventListener("change", update_chromosome_length_plot);
+    chromosome_length_logarithmic.addEventListener("change", () => update_chromosome_length_plot());
 }
 
-function update_chromosome_length_plot() {
+async function update_chromosome_length_plot() {
     if (chromosome_length_plot) {
         chromosome_length_data.labels = chromosome_names;
         chromosome_length_data.datasets = [];
@@ -220,11 +229,11 @@ function setup_chromosome_covered_length_plot() {
         config
     );
 
-    chromosome_covered_length_logarithmic.addEventListener("change", update_chromosome_covered_length_plot);
+    chromosome_covered_length_logarithmic.addEventListener("change", () => update_chromosome_covered_length_plot());
 
 }
 
-function update_chromosome_covered_length_plot() {
+async function update_chromosome_covered_length_plot() {
     if (chromosome_covered_length_plot) {
         chromosome_covered_length_data.labels = chromosome_names;
         chromosome_covered_length_data.datasets = [];
@@ -300,7 +309,7 @@ function setup_chromosome_coverage_plot() {
     );
 }
 
-function update_chromosome_coverage_plot() {
+async function update_chromosome_coverage_plot() {
     if (chromosome_coverage_plot) {
         chromosome_coverage_data.labels = chromosome_names;
         chromosome_coverage_data.datasets = [];
@@ -367,11 +376,12 @@ function setup_chromosome_coverage_per_bin_plot() {
                 y: {
                     stacked: true
                 }
-            }
+            },
+            animation: false
         }
     };
 
-    chromosome_coverage_per_bin_stat.addEventListener("change", update_chromosome_coverage_per_bin_plot)
+    chromosome_coverage_per_bin_stat.addEventListener("change", () => update_chromosome_coverage_per_bin_plot())
 
     chromosome_coverage_per_bin_plot = new Chart(
         document.getElementById('chromosome_coverage_per_bin_canvas'),
@@ -379,7 +389,7 @@ function setup_chromosome_coverage_per_bin_plot() {
     );
 }
 
-function update_chromosome_coverage_per_bin_plot() {
+async function update_chromosome_coverage_per_bin_plot() {
     if (chromosome_coverage_per_bin_plot) {
         chromosome_coverage_per_bin_data.datasets = [];
 
@@ -465,7 +475,7 @@ function setup_file_quality_plot() {
         }
     };
 
-    file_quality_logarithmic.addEventListener("change", update_file_quality_plot)
+    file_quality_logarithmic.addEventListener("change", () => update_file_quality_plot())
 
     file_quality_plot = new Chart(
         document.getElementById('file_quality_canvas'),
@@ -473,7 +483,7 @@ function setup_file_quality_plot() {
     );
 }
 
-function update_file_quality_plot() {
+async function update_file_quality_plot() {
     if (file_quality_plot) {
         let labels = [];
 
@@ -559,7 +569,7 @@ function setup_chromosome_quality_plot() {
         }
     };
 
-    chromosome_quality_logarithmic.addEventListener("change", update_chromosome_quality_plot)
+    chromosome_quality_logarithmic.addEventListener("change", () => update_chromosome_quality_plot())
 
     chromosome_quality_plot = new Chart(
         document.getElementById('chromosome_quality_canvas'),
@@ -567,7 +577,7 @@ function setup_chromosome_quality_plot() {
     );
 }
 
-function update_chromosome_quality_plot() {
+async function update_chromosome_quality_plot() {
     if (chromosome_quality_plot) {
         let labels = [];
 
@@ -657,7 +667,7 @@ function setup_number_reads_plot() {
         }
     };
 
-    number_reads_logarithmic.addEventListener("change", update_number_reads_plot)
+    number_reads_logarithmic.addEventListener("change", () => update_number_reads_plot())
 
     number_reads_plot = new Chart(
         document.getElementById('number_reads_canvas'),
@@ -665,7 +675,7 @@ function setup_number_reads_plot() {
     );
 }
 
-function update_number_reads_plot() {
+async function update_number_reads_plot() {
     if (number_reads_plot) {
         number_reads_data.labels = chromosome_names;
         number_reads_data.datasets = [];
@@ -746,8 +756,8 @@ function setup_length_reads_plot() {
         }
     };
 
-    length_reads_logarithmic.addEventListener("change", update_length_reads_plot);
-    length_reads_stat.addEventListener("change", update_length_reads_plot);
+    length_reads_logarithmic.addEventListener("change", () => update_length_reads_plot());
+    length_reads_stat.addEventListener("change", () => update_length_reads_plot());
 
     length_reads_plot = new Chart(
         document.getElementById('length_reads_canvas'),
@@ -755,7 +765,7 @@ function setup_length_reads_plot() {
     );
 }
 
-function update_length_reads_plot() {
+async function update_length_reads_plot() {
     if (length_reads_plot) {
         length_reads_data.labels = chromosome_names;
         length_reads_data.datasets = [];

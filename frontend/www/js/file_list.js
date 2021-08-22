@@ -5,7 +5,7 @@ import {
     add_file,
     get_chromosome_list,
     get_file_list,
-    get_per_file_stats,
+    generate_per_file_stats,
     process_file,
     remove_file,
     setup_file_list, update_file_color
@@ -22,10 +22,10 @@ const add_button_template = document.getElementById("file-dropdown-add-button-te
 const remove_button_template = document.getElementById("file-dropdown-remove-button-template");
 const loading_status_template = document.getElementById("file-dropdown-loading-status-template");
 
-export function setup_file_system()
+export async function setup_file_system()
 {
     setup_file_list();
-    rebuild_file_list();
+    await rebuild_file_list();
     file_input.addEventListener("change", () => handle_file_input_change());
 }
 
@@ -34,7 +34,7 @@ function handle_add_file_button_click() {
 }
 
 async function handle_file_input_change() {
-    let content_promises = [];
+    let promises = [];
 
     for (const file of file_input.files) {
         const name = file.name;
@@ -48,32 +48,36 @@ async function handle_file_input_change() {
 
         add_file(file, color);
         let promise = process_file(file)
-            .then(() => {
-                rebuild_file_list();
-                update_all_plots();
-            })
-            .catch(() => {
-                rebuild_file_list();
-                update_all_plots();
-            });
-        content_promises.push(promise);
+            .then(() => handle_process_file_completion())
+            .catch(() => handle_process_file_completion());
+
+        promises.push(promise);
     }
-    rebuild_file_list();
-    update_all_plots();
-    await Promise.all(content_promises);
+    promises.push(rebuild_file_list());
+    promises.push(update_all_plots());
+    await Promise.all(promises);
 }
 
-function handle_remove_file_click(file_name) {
+async function handle_process_file_completion() {
+    let promises = [];
+
+    promises.push(rebuild_file_list());
+    promises.push(update_all_plots());
+
+    await Promise.all(promises);
+}
+
+async function handle_remove_file_click(file_name) {
     remove_file(file_name);
-    rebuild_file_list();
+    await rebuild_file_list();
 }
 
-function handle_file_color_change(file_name, new_color) {
+async function handle_file_color_change(file_name, new_color) {
     update_file_color(file_name, new_color);
-    update_all_plots();
+    await update_all_plots();
 }
 
-function rebuild_file_list() {
+async function rebuild_file_list() {
     clear_dropdown();
 
     let files = get_file_list();
@@ -99,7 +103,7 @@ function rebuild_file_list() {
     rebuild_chromosome_list();
 
     rebuild_statistic_display();
-    update_all_plots();
+    await update_all_plots();
 }
 
 function rebuild_statistic_display() {
@@ -109,9 +113,9 @@ function rebuild_statistic_display() {
     let per_file_statistics = [];
 
     for (const file_name of files) {
-        if (!file_name[1]) {continue;}
+        if (!file_name[2]) {continue;}
 
-        let statistics = get_per_file_stats(file_name[0]);
+        let statistics = generate_per_file_stats(file_name[0]);
 
         if (!statistics) { continue; }
 
@@ -151,15 +155,13 @@ function hookup_list_item_events(list_item) {
 
     const name = name_div.innerHTML;
 
-    remove_button.addEventListener("click",function() {
-        handle_remove_file_click(name);
-    })
+    remove_button.addEventListener("click", () => handle_remove_file_click(name));
 }
 
 function hookup_add_file_button_events() {
     const add_button = file_dropdown.querySelector(".file-list-add-button");
 
-    add_button.addEventListener("click",handle_add_file_button_click);
+    add_button.addEventListener("click", () => handle_add_file_button_click());
 }
 
 function clear_chromosome_select() {
