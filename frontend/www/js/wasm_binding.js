@@ -1,3 +1,4 @@
+let generate_per_file_stats_func;
 let get_chromosome_names_func;
 let setup_file_list_func;
 let add_file_func;
@@ -18,8 +19,9 @@ export function setup_functions(
     get_file_list,
     get_dataset,
     get_file_color,
-    update_file_color
+    update_file_color,
 ) {
+    generate_per_file_stats_func = generate_per_file_stats;
     get_chromosome_names_func = get_chromosome_names;
     setup_file_list_func = setup_file_list;
     add_file_func = add_file;
@@ -29,14 +31,15 @@ export function setup_functions(
     get_dataset_func = get_dataset;
     get_file_color_func = get_file_color;
     update_file_color_func = update_file_color;
+
 }
 
 export function get_chromosome_list() {
     return get_chromosome_names_func();
 }
 
-export function get_per_file_stats(file_name) {
-    return get_chromosome_names_func(file_name);
+export function generate_per_file_stats(file_name) {
+    return generate_per_file_stats_func(file_name);
 }
 
 export function setup_file_list() {
