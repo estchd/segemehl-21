@@ -1,7 +1,5 @@
 #![feature(linked_list_cursors)]
 
-pub mod per_reference_statistics;
-pub mod bam_statistics;
 pub mod util;
 pub mod header;
 pub mod statistics;

@@ -11,9 +11,6 @@ use bam::{BamReader};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 pub use segemehl_21_core::{
     header::header::Header,
-    bam_statistics::BamStatistics,
-    per_reference_statistics::PerReferenceStatistics,
-    per_reference_statistics::PerReferenceStatisticsCalculationData,
 };
 use crate::command_line::CommandLineParameters;
 use crate::reader::get_parallel_reader;
