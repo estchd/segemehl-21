@@ -3,7 +3,9 @@ use clap::{App, Arg};
 pub struct CommandLineParameters {
     pub bam_path: String,
     pub bai_path: Option<String>,
-    pub output_path: String
+    pub output_path: String,
+    pub expected_record_count: Option<usize>,
+    pub info_dump: bool
 }
 
 impl CommandLineParameters {
@@ -39,6 +41,24 @@ impl CommandLineParameters {
                     .required(false)
 
             )
+            .arg(
+                Arg::with_name("expected_record_count")
+                    .short("rc")
+                    .long("record_count")
+                    .value_name("EXPECTED_RECORD_COUNT")
+                    .help("How many records the bam file is expected to contain")
+                    .takes_value(true)
+                    .required(false)
+            )
+            .arg(
+                Arg::with_name("info_dump")
+                    .short("id")
+                    .long("info_dump")
+                    .value_name("INFO_DUMP")
+                    .help("Dump Numeric Infos for each Reference into the Command Line")
+                    .takes_value(false)
+                    .required(false)
+            )
             .get_matches();
 
         let bam_path = matches.value_of("bam_path").map(|item| String::from(item)).unwrap();
@@ -46,10 +66,21 @@ impl CommandLineParameters {
         let output_path = matches.value_of("output_path").map(|item| String::from(item))
             .unwrap_or("statistics.json".to_string());
 
+        let expected_record_count = match matches.value_of("expected_record_count") {
+            None => None,
+            Some(expected) => {
+                Some(expected.parse::<usize>().expect("record_count is not a number"))
+            }
+        };
+
+        let info_dump = matches.is_present("info_dump");
+
         CommandLineParameters {
             bam_path,
             bai_path,
-            output_path
+            output_path,
+            expected_record_count,
+            info_dump
         }
     }
 }

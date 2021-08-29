@@ -10,6 +10,22 @@ pub struct PresentationAssemblerMap {
     map: HashMap<String, PresentationAssembler>
 }
 
+impl PresentationAssemblerMap {
+    pub fn get_map(&self) -> &HashMap<String, PresentationAssembler> {
+        &self.map
+    }
+
+    pub fn into_map(self) -> HashMap<String, PresentationAssembler> {
+        self.map
+    }
+}
+
+impl AsRef<HashMap<String, PresentationAssembler>> for PresentationAssemblerMap {
+    fn as_ref(&self) -> &HashMap<String, PresentationAssembler> {
+        self.get_map()
+    }
+}
+
 impl TryFrom<CalculationAssemblerMap> for PresentationAssemblerMap {
     type Error = ();
 

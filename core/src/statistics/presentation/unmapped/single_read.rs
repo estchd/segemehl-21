@@ -1,9 +1,9 @@
-use crate::statistics::calculation::unmapped::UnmappedSingleReadCalculationData;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 
 use serde_derive::{Deserialize, Serialize};
+use crate::statistics::calculation::unmapped::single_read::UnmappedSingleReadCalculationData;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UnmappedSingleReadPresentationData {
     read_length_map: PresentationFrequencyMap<u32>
 }

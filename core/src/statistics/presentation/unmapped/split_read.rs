@@ -1,34 +1,46 @@
-use crate::statistics::presentation::assembler::map::PresentationAssemblerMap;
-
 use serde_derive::{Deserialize, Serialize};
-use crate::statistics::calculation::assembler::map::CalculationAssemblerMap;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
+use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
+use crate::statistics::calculation::unmapped::split_read::UnmappedSplitReadCalculationData;
+use crate::util::get_record_length;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UnmappedSplitReadPresentationData {
-    assembler: PresentationAssemblerMap
+    read_length_map: PresentationFrequencyMap<u32>
 }
 
 impl UnmappedSplitReadPresentationData {
-    pub fn get_assembler(&self) -> &PresentationAssemblerMap {
-        &self.assembler
+    pub fn get_read_length_map(&self) -> &PresentationFrequencyMap<u32> {
+        &self.read_length_map
     }
 }
 
-impl AsRef<PresentationAssemblerMap> for UnmappedSplitReadPresentationData {
-    fn as_ref(&self) -> &PresentationAssemblerMap {
-        self.get_assembler()
+impl AsRef<PresentationFrequencyMap<u32>> for UnmappedSplitReadPresentationData {
+    fn as_ref(&self) -> &PresentationFrequencyMap<u32> {
+        self.get_read_length_map()
     }
 }
 
-impl TryFrom<CalculationAssemblerMap> for UnmappedSplitReadPresentationData {
+impl TryFrom<UnmappedSplitReadCalculationData> for UnmappedSplitReadPresentationData {
     type Error = ();
 
-    fn try_from(value: CalculationAssemblerMap) -> Result<Self, Self::Error> {
-        let assembler = value.try_into()?;
+    fn try_from(value: UnmappedSplitReadCalculationData) -> Result<Self, Self::Error> {
+        let mut map = PresentationFrequencyMap::new();
+
+        let entries = value.assembler.map.into_inner().map_err(|_| ())?;
+
+        let assembler_iter = entries.into_iter().map(|(_,entry)| entry);
+
+        for assembler in assembler_iter {
+            let records = assembler.associated_records.into_inner().map_err(|_| ())?;
+
+            for record in records {
+                map.add_entry(get_record_length(&record));
+            }
+        }
 
         Ok(Self {
-            assembler
+            read_length_map: map,
         })
     }
 }

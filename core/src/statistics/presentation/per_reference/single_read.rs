@@ -4,7 +4,7 @@ use crate::statistics::presentation::binned::map::BinnedStatisticsPresentationMa
 use crate::statistics::calculation::per_reference::single_read::SingleReadPerReferenceCalculationData;
 use crate::util::get_quality_frequency_map;
 
-#[derive(Debug, Deserialize, Serialize)]
+#[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SingleReadPerReferencePresentationData {
     quality_map: PresentationFrequencyMap<u8>,
     read_length_map: PresentationFrequencyMap<u32>,

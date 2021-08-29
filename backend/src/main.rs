@@ -22,6 +22,8 @@ use segemehl_21_core::{
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::convert::TryInto;
+use console::style;
+use indicatif::{ProgressBar, ProgressStyle};
 
 mod old_formatting;
 mod util;
@@ -33,12 +35,56 @@ fn main() {
 
     let bam_path = params.bam_path.as_str();
     let bai_path = params.bai_path;
+    let expected_record_count = params.expected_record_count;
+    let info_dump = params.info_dump;
+
+    println!();
+
+    if bai_path.is_some() {
+        println!(
+            "{} Parsing BAM and BAI File Headers...",
+            style("[1/4]").bold().dim()
+        )
+    }
+    else {
+        println!(
+            "{} Parsing BAM File Header...",
+            style("[1/4]").bold().dim()
+        )
+    }
 
     let reader = get_parallel_reader(bam_path, bai_path).unwrap();
 
     let header_reader = BamReader::from_path(bam_path,0u16).unwrap();
 
     let header = Header::try_from(header_reader.header()).unwrap();
+
+    println!(
+        "{} Reading Records...",
+        style("[2/4]").bold().dim()
+    );
+
+    let pb = match expected_record_count {
+        None => {
+            let pb = ProgressBar::new_spinner();
+            pb.set_style(ProgressStyle::default_spinner()
+                .template("{spinner} [{elapsed_precise}] Records read: {pos}")
+                .progress_chars("#>-")
+                .tick_chars("/-\\|"));
+            pb.set_draw_rate(15);
+            pb
+        }
+        Some(expected_count) => {
+            let pb = ProgressBar::new(expected_count as u64);
+            pb.set_style(ProgressStyle::default_bar()
+                .template("{spinner} [{elapsed_precise}] [{wide_bar}] {pos}/{len} ({eta})")
+                .progress_chars("#>-")
+                .tick_chars("/-\\|"));
+            pb.set_draw_rate(15);
+            pb
+        }
+    };
+
 
     let bin_config = BinConfig::NumberOfBins(NonZeroU32::new(1000).unwrap());
 
@@ -53,50 +99,84 @@ fn main() {
         calculation_data.add_record(record).unwrap();
 
         if total_records % 10000 == 0 {
-            println!("Records read: {}", total_records);
+            pb.set_position(total_records as u64);
         }
     });
 
     let (record_count, total_record_length) = (total_record_stats.0.into_inner(), total_record_stats.1.into_inner());
 
-    println!("Converting to Presentation Data");
+    pb.finish_and_clear();
+
+    println!(
+        "{} Calculating Statistics...",
+        style("[3/4]").bold().dim()
+    );
 
     let presentation_data: PresentationData = calculation_data.try_into().unwrap();
 
-    println!("Reading Finished");
+    println!();
     println!("Record Count: {}", record_count);
     println!("Total Record Length: {}", total_record_length);
     println!();
 
-    println!("Calculating per Reference Statistics");
+    if info_dump {
+        println!("Dumping Per Reference Statistics");
 
-    for statistic in presentation_data.get_per_reference_data() {
-        println!();
-        println!("Reference Name: {}", statistic.get_reference_name());
-        println!("Reference Length: {}", statistic.get_reference_length());
-        println!("Records for Reference: {}", statistic.get_read_length_map().get_frequency_sum());
-        println!("Total Record Length for Reference: {}", statistic.get_read_length_map().get_weighted_frequency_sum());
-        println!("Mean Read Length: {}", statistic.get_read_length_map().get_mean_frequency().unwrap_or(0.0));
-        println!("Median Read Length: {}", statistic.get_read_length_map().get_median_frequency().unwrap_or(0.0));
-        println!("Mode Read Length: {}", statistic.get_read_length_map().get_max_frequency().unwrap_or((0, 0)).0);
-        println!("Smallest Read Length: {}", statistic.get_read_length_map().get_min_entry().unwrap_or((0,0)).0);
-        println!("Biggest Read Length: {}", statistic.get_read_length_map().get_max_entry().unwrap_or((0,0)).0);
-        println!("Total Covered Length: {}", statistic.get_covered_length());
-        println!();
+        for statistic in presentation_data.get_per_reference_data() {
+            println!();
+            println!("Reference Name: {}", statistic.get_reference_name());
+            println!("Reference Length: {}", statistic.get_reference_length());
+            println!("Records for Reference: {}", statistic.get_read_length_map().get_frequency_sum());
+            println!("Total Record Length for Reference: {}", statistic.get_read_length_map().get_weighted_frequency_sum());
+            println!("Mean Read Length: {}", statistic.get_read_length_map().get_mean_frequency().unwrap_or(0.0));
+            println!("Median Read Length: {}", statistic.get_read_length_map().get_median_frequency().unwrap_or(0.0));
+            println!("Mode Read Length: {}", statistic.get_read_length_map().get_max_frequency().unwrap_or((0, 0)).0);
+            println!("Smallest Read Length: {}", statistic.get_read_length_map().get_min_entry().unwrap_or((0,0)).0);
+            println!("Biggest Read Length: {}", statistic.get_read_length_map().get_max_entry().unwrap_or((0,0)).0);
+            println!("Total Covered Length: {}", statistic.get_covered_length());
+            println!();
+        }
     }
+
+    println!(
+        "{} Writing to File...",
+        style("[4/4]").bold().dim()
+    );
 
     let json = false;
 
+    let pb = ProgressBar::new(3);
+    pb.set_style(ProgressStyle::default_bar()
+        .template("{spinner} [{elapsed_precise}] [{bar}] {pos}/{len} ({eta})")
+        .progress_chars("#>-")
+        .tick_chars("/-\\|"));
+    pb.enable_steady_tick(60/15);
+
+    pb.set_message("Creating File...");
+
     let mut out_file = File::create(params.output_path).unwrap();
 
+    pb.set_position(1);
+    pb.set_message("Serializing Data...");
+
     if json {
-        serde_json::to_writer(out_file, &presentation_data).unwrap();
+        let serialized = serde_json::to_string(&presentation_data).unwrap();
+
+        pb.set_position(2);
+        pb.set_message("Writing Data...");
+
+        out_file.write(serialized.as_bytes()).unwrap();
     }
     else {
         let serialized = bincode::serialize(&presentation_data).unwrap();
 
+        pb.set_position(2);
+        pb.set_message("Writing Data...");
+
         out_file.write_all(&serialized).unwrap();
     }
+
+    pb.finish_and_clear();
 
     println!("Finished");
 }

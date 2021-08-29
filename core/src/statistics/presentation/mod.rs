@@ -6,6 +6,7 @@ use crate::statistics::calculation::CalculationData;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::util::get_quality_frequency_map;
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
+use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 
 pub mod frequency_map;
 pub mod binned;
@@ -133,14 +134,42 @@ impl TryFrom<CalculationData> for PresentationData {
     type Error = ();
 
     fn try_from(value: CalculationData) -> Result<Self, Self::Error> {
+        let mpb = MultiProgress::new();
+
+        let pb = mpb.add(ProgressBar::new(value.per_reference.len() as u64));
+
+        pb.set_message("Calculating Per Reference Statistics...");
+        pb.set_prefix("[1/2]");
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{prefix}     {spinner} [{elapsed_precise}] [{bar}] {pos}/{len} ({eta}) {msg}")
+            .progress_chars("#>-")
+            .tick_chars("/-\\|"));
+        pb.enable_steady_tick(60/15);
+
         let per_reference = value.per_reference
             .into_iter()
             .map(|per_reference| {
-                per_reference.try_into()
+                let value = PerReferencePresentationData::calculate_from_data(per_reference, &mpb);
+                pb.inc(1);
+                value
             })
-            .collect::<Result<Vec<PerReferencePresentationData>, ()>>()?;
+            .collect::<Vec<PerReferencePresentationData>>();
 
-        let unmapped = (value.unmapped_single_read, value.unmapped_assembler).try_into()?;
+        pb.reset_elapsed();
+        pb.reset_eta();
+
+        pb.set_message("Calculating Unmapped Statistics...");
+        pb.set_prefix("[2/2]");
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{prefix}     {spinner} [{elapsed_precise}] {msg}")
+            .progress_chars("#>-")
+            .tick_chars("/-\\|"));
+
+        let unmapped = value.unmapped.try_into()?;
+
+        pb.finish_with_message("Completed, waiting...");
+
+        mpb.clear().map_err(|_| ())?;
 
         Ok(Self {
             per_reference,

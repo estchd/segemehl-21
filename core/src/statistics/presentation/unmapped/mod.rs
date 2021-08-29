@@ -2,10 +2,10 @@ use serde_derive::{Deserialize, Serialize};
 
 use single_read::UnmappedSingleReadPresentationData;
 
-use crate::statistics::calculation::unmapped::UnmappedSingleReadCalculationData;
 use crate::statistics::presentation::unmapped::split_read::UnmappedSplitReadPresentationData;
-use crate::statistics::calculation::assembler::map::CalculationAssemblerMap;
 use std::convert::{TryFrom, TryInto};
+use crate::statistics::calculation::unmapped::UnmappedCalculationData;
+use indicatif::{ProgressBar, ProgressStyle};
 
 pub mod single_read;
 pub mod split_read;
@@ -38,12 +38,35 @@ impl AsRef<UnmappedSplitReadPresentationData> for UnmappedPresentationData {
     }
 }
 
-impl TryFrom<(UnmappedSingleReadCalculationData, CalculationAssemblerMap)> for UnmappedPresentationData {
+impl TryFrom<UnmappedCalculationData> for UnmappedPresentationData {
     type Error = ();
 
-    fn try_from(calculation: (UnmappedSingleReadCalculationData, CalculationAssemblerMap)) -> Result<Self, Self::Error> {
-        let single_read = calculation.0.into();
-        let split_read = calculation.1.try_into()?;
+    fn try_from(calculation: UnmappedCalculationData) -> Result<Self, Self::Error> {
+        let pb = ProgressBar::new_spinner();
+        pb.set_message("Calculating Unmapped Single Read Statistics...");
+        pb.set_prefix("[1/2]");
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{prefix}         {spinner} [{elapsed_precise}] {msg}")
+            .progress_chars("#>-")
+            .tick_chars("/-\\|"));
+        pb.enable_steady_tick(60/15);
+
+        let single_read = calculation.single_read.into();
+
+        pb.reset_eta();
+        pb.reset_elapsed();
+
+        pb.set_message("Calculating Unmapped Split Read Statistics...");
+        pb.set_prefix("[2/2]");
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{prefix}         {spinner} [{elapsed_precise}] {msg}")
+            .progress_chars("#>-")
+            .tick_chars("/-\\|"));
+        pb.enable_steady_tick(60/15);
+
+        let split_read = calculation.split_read.try_into()?;
+
+        pb.finish_and_clear();
 
         Ok(Self {
             single_read,

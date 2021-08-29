@@ -26,7 +26,7 @@ impl SingleReadPerReferenceCalculationData {
         })
     }
 
-    pub fn add_record(&self, record: Record) -> Result<(),()> {
+    pub fn add_record(&self, record: Record) {
         let quality = get_record_mapping_quality(&record);
         let length = get_record_length(&record);
 
@@ -36,7 +36,5 @@ impl SingleReadPerReferenceCalculationData {
         self.quality_map.add_entry(quality);
         self.read_length_map.add_entry(length);
         self.binned_statistics.add_coverage(start, end);
-
-        Ok(())
     }
 }
