@@ -47,18 +47,37 @@ async function handle_file_input_change() {
         let color = getRandomColor();
 
         add_file(file, color);
+        console.log("file added");
         let promise = process_file(file)
             .then(() => handle_process_file_completion())
-            .catch(() => handle_process_file_completion());
+            .catch((err) => handle_process_file_fail(err));
 
         promises.push(promise);
+        console.log("file promise created");
     }
     promises.push(rebuild_file_list());
     promises.push(update_all_plots());
+
+    console.log("file started plot update promises started");
     await Promise.all(promises);
+    console.log("file started plot update promises completed");
 }
 
 async function handle_process_file_completion() {
+    console.log("file promise completed");
+
+    let promises = [];
+
+    promises.push(rebuild_file_list());
+    promises.push(update_all_plots());
+
+    await Promise.all(promises);
+}
+
+async function handle_process_file_fail(err) {
+    console.log("file promise failed");
+    console.error("Err: " + err);
+
     let promises = [];
 
     promises.push(rebuild_file_list());
@@ -104,6 +123,8 @@ async function rebuild_file_list() {
 
     rebuild_statistic_display();
     await update_all_plots();
+
+    console.log("rebuild file list completed");
 }
 
 function rebuild_statistic_display() {

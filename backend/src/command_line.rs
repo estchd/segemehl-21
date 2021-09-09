@@ -16,7 +16,6 @@ impl CommandLineParameters {
             .about("Generates Segemehl-21 Statistics Data from Bam Files")
             .arg(
                 Arg::with_name("bam_path")
-                    .short("i")
                     .long("input")
                     .value_name("BAM_PATH")
                     .help("Path to the Input Bam File")
@@ -33,7 +32,6 @@ impl CommandLineParameters {
             )
             .arg(
                 Arg::with_name("output_path")
-                    .short("o")
                     .long("output")
                     .value_name("OUTPUT_PATH")
                     .help("Name of the output File that will be generated")
@@ -43,7 +41,6 @@ impl CommandLineParameters {
             )
             .arg(
                 Arg::with_name("expected_record_count")
-                    .short("rc")
                     .long("record_count")
                     .value_name("EXPECTED_RECORD_COUNT")
                     .help("How many records the bam file is expected to contain")
@@ -52,7 +49,6 @@ impl CommandLineParameters {
             )
             .arg(
                 Arg::with_name("info_dump")
-                    .short("id")
                     .long("info_dump")
                     .value_name("INFO_DUMP")
                     .help("Dump Numeric Infos for each Reference into the Command Line")

@@ -4,7 +4,7 @@ use crate::statistics::calculation::binned::map::BinnedStatisticsCalculationMap;
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use crate::header::reference_sequence_line::reference_sequence::ReferenceSequence;
 use crate::statistics::calculation::binned::BinConfig;
-use crate::util::{get_record_mapping_quality, get_record_length, get_record_start, get_record_end};
+use crate::util::{get_record_mapping_quality, get_record_length};
 
 #[derive(Debug)]
 pub struct SplitReadPerReferenceCalculationData {
@@ -32,12 +32,9 @@ impl SplitReadPerReferenceCalculationData {
 		let quality = get_record_mapping_quality(&record);
 		let length = get_record_length(&record);
 
-		let start = get_record_start(&record);
-		let end = get_record_end(&record);
-
 		self.quality_map.add_entry(quality);
 		self.read_length_map.add_entry(length);
-		self.binned_statistics.add_coverage(start, end);
+		self.binned_statistics.add_record(&record);
 		self.assembler.add_record(record)
 	}
 }

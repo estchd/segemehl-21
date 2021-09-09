@@ -92,6 +92,8 @@ fn main() {
 
     let total_record_stats: (AtomicUsize, AtomicUsize) = (AtomicUsize::new(0), AtomicUsize::new(0));
 
+
+
     reader.into_par_iter().filter_map(|item| item.ok()).for_each(|record| {
         let total_records = total_record_stats.0.fetch_add(1, Ordering::Relaxed);
         let _ = total_record_stats.1.fetch_add(get_record_length(&record) as usize, Ordering::Relaxed);
@@ -138,12 +140,12 @@ fn main() {
         }
     }
 
+
     println!(
         "{} Writing to File...",
         style("[4/4]").bold().dim()
     );
 
-    let json = false;
 
     let pb = ProgressBar::new(3);
     pb.set_style(ProgressStyle::default_bar()
@@ -159,11 +161,13 @@ fn main() {
     pb.set_position(1);
     pb.set_message("Serializing Data...");
 
+    let json = true;
+
     if json {
         let serialized = serde_json::to_string(&presentation_data).unwrap();
 
         pb.set_position(2);
-        pb.set_message("Writing Data...");
+        pb.set_message("Writing JSON Data...");
 
         out_file.write(serialized.as_bytes()).unwrap();
     }
@@ -171,7 +175,7 @@ fn main() {
         let serialized = bincode::serialize(&presentation_data).unwrap();
 
         pb.set_position(2);
-        pb.set_message("Writing Data...");
+        pb.set_message("Writing Bytecode Data...");
 
         out_file.write_all(&serialized).unwrap();
     }

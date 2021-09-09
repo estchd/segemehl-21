@@ -18,6 +18,25 @@ pub struct BinnedStatisticsPresentationMap {
 }
 
 impl BinnedStatisticsPresentationMap {
+	pub fn merge(lhs: &BinnedStatisticsPresentationMap, rhs: &BinnedStatisticsPresentationMap) -> Result<BinnedStatisticsPresentationMap,()> {
+		if lhs.start != rhs.start { return Err(()); }
+		if lhs.end != rhs.end { return Err(()); }
+		if lhs.bin_size != rhs.bin_size { return Err(()); }
+
+		let mut new_bins = Vec::new();
+
+		for i in 0..lhs.bins.len() {
+			new_bins.push(BinStatisticsPresentationData::merge(&lhs.bins[i], &rhs.bins[i])?);
+		}
+
+		Ok(BinnedStatisticsPresentationMap {
+			bin_size: lhs.bin_size,
+			bins: new_bins,
+			start: lhs.start,
+			end: lhs.end
+		})
+	}
+
 
 	#[inline(always)]
 	pub fn get_bin_size(&self) -> NonZeroU32 {

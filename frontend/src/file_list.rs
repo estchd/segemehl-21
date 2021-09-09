@@ -8,6 +8,7 @@ use std::collections::HashMap;
 use std::iter::FromIterator;
 use crate::chromosome_list::{clear_chromosomes, has_chromosomes, set_chromosomes, check_chromosomes};
 use segemehl_21_core::statistics::presentation::PresentationData;
+use segemehl_21_core::statistics::presentation::frequency_map::PresentationFrequencyMap;
 
 lazy_static! {
 	pub static ref FILE_LIST: Mutex<HashMap<String, (String, Option<(PresentationData, HashMap<String, Vec<f64>>)>)>> = {
@@ -37,8 +38,17 @@ pub async fn process_file(file: web_sys::File) -> Result<(),JsValue>{
 	let array: Uint8Array = Uint8Array::new(&result);
 	let data: Vec<u8> = array.to_vec();
 
-	let deserialized_data: PresentationData = bincode::deserialize(&data)
+	let data: String = String::from_utf8(data)
+		.map_err(|_| JsValue::from_str("Error Converting File Data to String"))?;
+
+	console_log!("Converted vec into string");
+
+	let deserialized_data: PresentationData = serde_json::from_str(&data)
 		.map_err(|_| JsValue::from_str("Error deserializing File Content"))?;
+
+
+	//let deserialized_data: PresentationData = bincode::deserialize(&data)
+	//	.map_err(|err| JsValue::from_str(format!("Error deserializing File Content: {}", err).as_str()))?;
 
 	let chromosomes: Vec<String> = deserialized_data
 		.get_per_reference_data()
@@ -58,6 +68,7 @@ pub async fn process_file(file: web_sys::File) -> Result<(),JsValue>{
 	let repository = generate_data_repository(&deserialized_data);
 
 	let mut file_list = FILE_LIST.lock().unwrap();
+
 	let existing = file_list.get(&file.name());
 	let color = match existing {
 		None => Err(JsValue::from_str("File Removed before Completion")),
@@ -234,6 +245,44 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 	repository.insert("Mean_length_of_read_per_chromosome".to_string(), mean_length_of_read_per_chromosome_data.clone());
 	repository.insert("Median_length_of_read_per_chromosome".to_string(), median_length_of_read_per_chromosome_data.clone());
 	repository.insert("Mode_length_of_read_per_chromosome".to_string(), mode_length_of_read_per_chromosome_data.clone());
+
+	let file_gap_length_map = data.get_per_reference_data()
+		.map(|item| item.get_split_read_data())
+		.map(|item| item.get_gap_length_map())
+		.fold(PresentationFrequencyMap::new(), |acc, item| {
+			PresentationFrequencyMap::merge(&acc, item)
+		});
+
+	let mut file_gap_length_map: Vec<(i64, u64)> = file_gap_length_map.get_frequencies().map(|(a,b)| (*a,b)).collect();
+
+	file_gap_length_map.sort_by(|(a,_),(b,_)| {
+		a.cmp(b)
+	});
+
+	let gap_lengths: Vec<f64> = file_gap_length_map.iter().map(|(a,_)| *a as f64).collect();
+	let gap_length_frequencies: Vec<f64> = file_gap_length_map.iter().map(|(_,b)| *b as f64).collect();
+
+	repository.insert("file_gap_lengths".to_string(), gap_lengths);
+	repository.insert("file_gap_length_frequencies".to_string(), gap_length_frequencies);
+
+	let file_split_counts_map = data.get_per_reference_data()
+		.map(|item| item.get_split_read_data())
+		.map(|item| item.get_split_count_map())
+		.fold(PresentationFrequencyMap::new(), |acc, item| {
+			PresentationFrequencyMap::merge(&acc, item)
+		});
+
+	let mut file_split_counts_map: Vec<(usize, u64)> = file_split_counts_map.get_frequencies().map(|(a,b)| (*a,b)).collect();
+
+	file_split_counts_map.sort_by(|(a,_),(b,_)| {
+		a.cmp(b)
+	});
+
+	let split_counts: Vec<f64> = file_split_counts_map.iter().map(|(a,_)| *a as f64).collect();
+	let split_count_frequencies: Vec<f64> = file_split_counts_map.iter().map(|(_,b)| *b as f64).collect();
+
+	repository.insert("file_split_counts".to_string(), split_counts);
+	repository.insert("file_split_count_frequencies".to_string(), split_count_frequencies);
 
 	repository
 }

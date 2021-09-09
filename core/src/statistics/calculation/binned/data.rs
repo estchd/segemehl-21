@@ -7,7 +7,11 @@ pub struct BinStatisticsCalculationData {
 	pub(crate) start: u32,
 	pub(crate) end: u32,
 	pub(crate) coverage: AtomicU32,
-	pub(crate) coverage_times_area: AtomicUsize
+	pub(crate) coverage_times_area: AtomicUsize,
+	pub(crate) alignment_matches: AtomicUsize,
+	pub(crate) insertions: AtomicUsize,
+	pub(crate) deletions: AtomicUsize,
+	pub(crate) skips: AtomicUsize,
 }
 
 impl BinStatisticsCalculationData {
@@ -16,7 +20,11 @@ impl BinStatisticsCalculationData {
 			start,
 			end,
 			coverage: Default::default(),
-			coverage_times_area: Default::default()
+			coverage_times_area: Default::default(),
+			alignment_matches: Default::default(),
+			insertions: Default::default(),
+			deletions: Default::default(),
+			skips: Default::default()
 		}
 	}
 

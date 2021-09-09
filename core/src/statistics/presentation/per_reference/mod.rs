@@ -7,6 +7,7 @@ use crate::statistics::presentation::per_reference::single_read::SingleReadPerRe
 use crate::statistics::calculation::per_reference::PerReferenceCalculationData;
 use crate::statistics::presentation::per_reference::split_read::SplitReadPerReferencePresentationData;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
+use crate::statistics::presentation::binned::map::BinnedStatisticsPresentationMap;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct PerReferencePresentationData {
@@ -47,6 +48,20 @@ impl PerReferencePresentationData {
             self.single_read_data.get_read_length_map(),
             self.split_read_data.get_read_length_map()
         )
+    }
+
+    pub fn get_quality_frequency(&self) -> PresentationFrequencyMap<u8> {
+        PresentationFrequencyMap::merge(
+            self.single_read_data.get_quality_frequency(),
+            self.split_read_data.get_quality_frequency()
+        )
+    }
+
+    pub fn get_binned_statistics(&self) -> BinnedStatisticsPresentationMap {
+        BinnedStatisticsPresentationMap::merge(
+            self.single_read_data.get_binned_statistics(),
+            self.split_read_data.get_binned_statistics()
+        ).unwrap()
     }
 
     pub fn calculate_from_data(value: PerReferenceCalculationData, mpb: &MultiProgress) -> PerReferencePresentationData {

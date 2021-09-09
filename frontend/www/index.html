@@ -118,80 +118,102 @@
                         </div>
                     </div>
                     <div class="tab-pane fade" id="plots-tab-content" role="tabpanel" aria-labelledby="plots-tab">
-                        <div style="display: block; width: 100%">
-
-                            <div style="display: inline; margin-left: 100px">
-                                <h4 style="width: 600px">Test Plot</h4>
-                                <p>Logarithmic Scale: <input id="test_logarithmic_toggle" type="checkbox"/></p>
-                                <p>Logarithm Base: <input id="test_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-                                <div style="width: 1200px">
-                                    <canvas id="chartjs_test_canvas"></canvas>
+                        <ul class="nav nav-tabs" id="plot-tabs" role="tablist">
+                            <li class="nav-item" role="presentation">
+                                <button class="nav-link active" id="single-read-plots-tab" data-bs-toggle="tab" data-bs-target="#single-read-plots-tab-content" type="button" role="tab" aria-controls="single-read-plots-tab" aria-selected="true">Single Read Plots</button>
+                            </li>
+                            <li>
+                                <button class="nav-link" id="split-read-plots-tab" data-bs-toggle="tab" data-bs-target="#split-read-plots-tab-content" type="button" role="tab" aria-controls="split-read-plots-tab" aria-selected="false">Split Read Plots</button>
+                            </li>
+                        </ul>
+                        <div class="tab-content" id="plot-tabs-content">
+                            <div class="tab-pane fade show active" id="single-read-plots-tab-content" role="tabpanel" aria-labelledby="single-read-plots-tab">
+                                <div style="display: block; width: 100%">
+                                    <div style="display: inline; margin-left: 100px">
+                                        <h4 style="width: 600px">Test Plot</h4>
+                                        <p>Logarithmic Scale: <input id="test_logarithmic_toggle" type="checkbox"/></p>
+                                        <p>Logarithm Base: <input id="test_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
+                                        <div style="width: 1200px">
+                                            <canvas id="chartjs_test_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div class="w-100">
+                                        <h4 style="width: 600px">Length of Chromosomes</h4>
+                                        <p>Logarithmic Scale: <input id="length_of_chromosomes_logarithmic" type="checkbox"/></p>
+                                        <div class="w-100">
+                                            <canvas id="chromosome_length_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div style="display: inline">
+                                        <h4 style="width: 600px">Covered Length of Chromosomes</h4>
+                                        <p>Logarithmic Scale: <input id="chromosome_covered_length_logarithmic" type="checkbox"/></p>
+                                        <div class="w-100">
+                                            <canvas id="chromosome_covered_length_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div style="display: inline">
+                                        <h4 style="width: 600px">Coverage of Chromosomes</h4>
+                                        <div class="w-100">
+                                            <canvas id="chromosome_coverage_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div style="display: inline">
+                                        <h4 style="width: 600px">Coverage per Bin on selected Chromosome</h4>
+                                        <select id="chromosome_coverage_per_bin_stat">
+                                            <option value="Total">Total</option>
+                                            <option value="Average">Average</option>
+                                        </select>
+                                        <div class="w-100">
+                                            <canvas id="chromosome_coverage_per_bin_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div style="display: inline">
+                                        <h4 style="width: 600px">Quality Frequency Map for Whole File</h4>
+                                        <p>Logarithmic Scale: <input id="file_quality_logarithmic" type="checkbox"/></p>
+                                        <div class="w-100">
+                                            <canvas id="file_quality_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div style="display: inline">
+                                        <h4 style="width: 600px">Quality Frequency Map for selected Chromosome</h4>
+                                        <p>Logarithmic Scale: <input id="chromosome_quality_logarithmic" type="checkbox"/></p>
+                                        <div class="w-100">
+                                            <canvas id="chromosome_quality_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div style="display: inline">
+                                        <h4 style="width: 600px">Number of Reads per Chromosome</h4>
+                                        <p>Logarithmic Scale: <input id="number_reads_logarithmic" type="checkbox"/></p>
+                                        <div class="w-100">
+                                            <canvas id="number_reads_canvas"></canvas>
+                                        </div>
+                                    </div>
+                                    <div style="display: inline">
+                                        <h4 style="width: 600px">Length of a Read per Chromosome</h4>
+                                        <label for="length_reads_stat">Calculated Stat: </label>
+                                        <select id="length_reads_stat">
+                                            <option value="Mean">Mean</option>
+                                            <option value="Mode">Mode</option>
+                                            <option value="Median">Median</option>
+                                            <option value="Shortest">Shortest</option>
+                                            <option value="Longest">Longest</option>
+                                        </select>
+                                        <p>Logarithmic Scale: <input id="length_reads_logarithmic" type="checkbox"/></p>
+                                        <div class="w-100">
+                                            <canvas id="length_reads_canvas"></canvas>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-                            <div class="w-100">
-                                <h4 style="width: 600px">Length of Chromosomes</h4>
-                                <p>Logarithmic Scale: <input id="length_of_chromosomes_logarithmic" type="checkbox"/></p>
+                            <div class="tab-pane fade" id="split-read-plots-tab-content" role="tabpanel" aria-labelledby="split-read-plots-tab">
+                                <h4 style="width: 600px">Gap Lengths for File</h4>
                                 <div class="w-100">
-                                    <canvas id="chromosome_length_canvas"></canvas>
+                                    <canvas id="file_gap_lengths_canvas"></canvas>
                                 </div>
-                            </div>
-                            <div style="display: inline">
-                                <h4 style="width: 600px">Covered Length of Chromosomes</h4>
-                                <p>Logarithmic Scale: <input id="chromosome_covered_length_logarithmic" type="checkbox"/></p>
+                                <h4 style="width: 600px">Split Counts for File</h4>
+                                <p>Logarithmic Scale: <input id="file_split_counts_logarithmic" type="checkbox"/></p>
                                 <div class="w-100">
-                                    <canvas id="chromosome_covered_length_canvas"></canvas>
-                                </div>
-                            </div>
-                            <div style="display: inline">
-                                <h4 style="width: 600px">Coverage of Chromosomes</h4>
-                                <div class="w-100">
-                                    <canvas id="chromosome_coverage_canvas"></canvas>
-                                </div>
-                            </div>
-                            <div style="display: inline">
-                                <h4 style="width: 600px">Coverage per Bin on selected Chromosome</h4>
-                                <select id="chromosome_coverage_per_bin_stat">
-                                    <option value="Total">Total</option>
-                                    <option value="Average">Average</option>
-                                </select>
-                                <div class="w-100">
-                                    <canvas id="chromosome_coverage_per_bin_canvas"></canvas>
-                                </div>
-                            </div>
-                            <div style="display: inline">
-                                <h4 style="width: 600px">Quality Frequency Map for Whole File</h4>
-                                <p>Logarithmic Scale: <input id="file_quality_logarithmic" type="checkbox"/></p>
-                                <div class="w-100">
-                                    <canvas id="file_quality_canvas"></canvas>
-                                </div>
-                            </div>
-                            <div style="display: inline">
-                                <h4 style="width: 600px">Quality Frequency Map for selected Chromosome</h4>
-                                <p>Logarithmic Scale: <input id="chromosome_quality_logarithmic" type="checkbox"/></p>
-                                <div class="w-100">
-                                    <canvas id="chromosome_quality_canvas"></canvas>
-                                </div>
-                            </div>
-                            <div style="display: inline">
-                                <h4 style="width: 600px">Number of Reads per Chromosome</h4>
-                                <p>Logarithmic Scale: <input id="number_reads_logarithmic" type="checkbox"/></p>
-                                <div class="w-100">
-                                    <canvas id="number_reads_canvas"></canvas>
-                                </div>
-                            </div>
-                            <div style="display: inline">
-                                <h4 style="width: 600px">Length of a Read per Chromosome</h4>
-                                <label for="length_reads_stat">Calculated Stat: </label>
-                                <select id="length_reads_stat">
-                                    <option value="Mean">Mean</option>
-                                    <option value="Mode">Mode</option>
-                                    <option value="Median">Median</option>
-                                    <option value="Shortest">Shortest</option>
-                                    <option value="Longest">Longest</option>
-                                </select>
-                                <p>Logarithmic Scale: <input id="length_reads_logarithmic" type="checkbox"/></p>
-                                <div class="w-100">
-                                    <canvas id="length_reads_canvas"></canvas>
+                                    <canvas id="file_split_counts_canvas"></canvas>
                                 </div>
                             </div>
                         </div>

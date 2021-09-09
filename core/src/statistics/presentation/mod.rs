@@ -24,19 +24,19 @@ pub struct PresentationData {
 impl PresentationData {
     pub fn get_complete_quality_frequency(&self) -> PresentationFrequencyMap<u8> {
         self.per_reference.iter()
-            .map(|item| item.get_single_read_data().get_quality_frequency())
+            .map(|item| item.get_quality_frequency())
             .fold(PresentationFrequencyMap::<u8>::new(),
                 |a,b|
-                PresentationFrequencyMap::<u8>::merge(&a, b)
+                PresentationFrequencyMap::<u8>::merge(&a, &b)
             )
     }
 
     pub fn get_complete_read_length_map(&self) -> PresentationFrequencyMap<u32> {
         self.per_reference.iter()
-            .map(|item| item.get_single_read_data().get_read_length_map())
+            .map(|item| item.get_read_length_map())
             .fold(PresentationFrequencyMap::<u32>::new(),
                 |a, b|
-                    PresentationFrequencyMap::<u32>::merge(&a, b)
+                    PresentationFrequencyMap::<u32>::merge(&a, &b)
             )
     }
 

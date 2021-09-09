@@ -4,7 +4,10 @@ use std::sync::atomic::Ordering;
 
 use crate::statistics::calculation::binned::BinConfig;
 use crate::statistics::calculation::binned::data::BinStatisticsCalculationData;
-use crate::util::{calculate_bin, length};
+use crate::util::{calculate_bin, length, get_record_start, get_record_end, CigarMaxLengthIter};
+use bam::Record;
+use bam::record::cigar::Operation;
+use std::sync::atomic::Ordering::Relaxed;
 
 #[derive(Debug)]
 pub struct BinnedStatisticsCalculationMap {
@@ -64,7 +67,10 @@ impl BinnedStatisticsCalculationMap {
 		})
 	}
 
-	pub fn add_coverage(&self, start: u32, end: u32) {
+	pub fn add_record(&self, record: &Record) {
+		let start = get_record_start(record);
+		let end = get_record_end(record);
+
 		if end < start {return;}
 
 		if start > self.end && end > self.end {return;}
@@ -76,10 +82,17 @@ impl BinnedStatisticsCalculationMap {
 		let start_bin = calculate_bin(self.start, self.bin_size, start).unwrap();
 		let end_bin = calculate_bin(self.start, self.bin_size, end).unwrap();
 
+		let mut front_iterator = CigarMaxLengthIter::new(record);
+		let mut back_iterator = CigarMaxLengthIter::new(record);
+
 		if start_bin.bin_index == end_bin.bin_index {
 			let length_in_bin = length(start, end);
 
 			let bin = &self.bins[start_bin.bin_index as usize];
+
+			let cigars = front_iterator.collect();
+
+			Self::add_cigars_to_bin(bin, cigars);
 
 			bin.coverage.fetch_add(1, Ordering::Relaxed);
 			bin.coverage_times_area.fetch_add(length_in_bin as usize, Ordering::Relaxed);
@@ -95,10 +108,18 @@ impl BinnedStatisticsCalculationMap {
 		bin.coverage.fetch_add(1, Ordering::Relaxed);
 		bin.coverage_times_area.fetch_add(length_in_start_bin as usize, Ordering::Relaxed);
 
+		let start_bin_cigars = front_iterator.next_for_ref_length(length_in_start_bin);
+
+		Self::add_cigars_to_bin(bin, start_bin_cigars);
+
 		let bin = &self.bins[end_bin.bin_index as usize];
 
 		bin.coverage.fetch_add(1, Ordering::Relaxed);
 		bin.coverage_times_area.fetch_add(length_in_end_bin as usize, Ordering::Relaxed);
+
+		let end_bin_cigars = back_iterator.next_for_ref_length(length_in_end_bin);
+
+		Self::add_cigars_to_bin(bin, end_bin_cigars);
 
 		let first_full_bin = start_bin.bin_index + 1;
 
@@ -109,6 +130,10 @@ impl BinnedStatisticsCalculationMap {
 
 			bin.coverage.fetch_add(1, Ordering::Relaxed);
 			bin.coverage_times_area.fetch_add(self.bin_size.get() as usize, Ordering::Relaxed);
+
+			let bin_cigars = front_iterator.next_for_ref_length(bin.get_length());
+
+			Self::add_cigars_to_bin(bin, bin_cigars);
 		}
 	}
 
@@ -140,6 +165,31 @@ impl BinnedStatisticsCalculationMap {
 	#[inline(always)]
 	pub fn get_bins(&self) -> impl Iterator<Item = &BinStatisticsCalculationData> {
 		self.bins.iter()
+	}
+
+	fn add_cigars_to_bin(bin: &BinStatisticsCalculationData, cigars: Vec<(u32, Operation)>) {
+		for (len, op) in cigars {
+			match op {
+				Operation::SeqMatch |
+				Operation::SeqMismatch |
+				Operation::AlnMatch => {
+					bin.alignment_matches.fetch_add(len as usize, Relaxed);
+				}
+				Operation::Insertion => {
+					bin.insertions.fetch_add(len as usize, Relaxed);
+				}
+				Operation::Deletion => {
+					bin.deletions.fetch_add(len as usize, Relaxed);
+				}
+				Operation::Skip => {
+					bin.skips.fetch_add(len as usize, Relaxed);
+				}
+				Operation::Soft |
+				Operation::Hard |
+				Operation::Padding => {
+				}
+			}
+		}
 	}
 }
 
