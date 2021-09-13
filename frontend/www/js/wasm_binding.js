@@ -6,7 +6,7 @@ let process_file_func;
 let remove_file_func;
 let get_file_list_func;
 let get_dataset_func;
-let get_file_color_func;
+let get_file_colors_func;
 let update_file_color_func;
 
 export function setup_functions(
@@ -18,7 +18,7 @@ export function setup_functions(
     remove_file,
     get_file_list,
     get_dataset,
-    get_file_color,
+    get_file_colors,
     update_file_color,
 ) {
     generate_per_file_stats_func = generate_per_file_stats;
@@ -29,7 +29,7 @@ export function setup_functions(
     remove_file_func = remove_file;
     get_file_list_func = get_file_list;
     get_dataset_func = get_dataset;
-    get_file_color_func = get_file_color;
+    get_file_colors_func = get_file_colors;
     update_file_color_func = update_file_color;
 
 }
@@ -46,8 +46,8 @@ export function setup_file_list() {
     return setup_file_list_func();
 }
 
-export function add_file(file, color) {
-    return add_file_func(file, color);
+export function add_file(file, colors) {
+    return add_file_func(file, colors);
 }
 
 export function process_file(file) {
@@ -66,11 +66,11 @@ export function get_dataset(file_name, dataset_name) {
     return get_dataset_func(file_name, dataset_name);
 }
 
-export function get_file_color(file_name) {
-    return get_file_color_func(file_name);
+export function get_file_colors(file_name) {
+    return get_file_colors_func(file_name);
 }
 
-export function update_file_color(file_name, new_color) {
-    return update_file_color_func(file_name, new_color);
+export function update_file_color(file_name, new_color, index) {
+    return update_file_color_func(file_name, new_color, index);
 }
 

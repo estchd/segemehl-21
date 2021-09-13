@@ -1,18 +1,36 @@
 import {get_chromosome_list, get_dataset, get_file_list} from "./wasm_binding";
+import {
+    setup_coverage_plots,
+    update_reference_dependent_coverage_plots,
+    update_coverage_plots
+} from "./plots/coverage_plots";
+import {setup_cigar_plots, update_cigar_plots, update_reference_dependent_cigar_plots} from "./plots/cigar_plots";
+import {
+    setup_read_quality_plots,
+    update_read_quality_plots,
+    update_reference_dependent_read_quality_plots
+} from "./plots/read_quality_plots";
+import {
+    setup_read_length_plots,
+    update_read_length_plots,
+    update_reference_dependent_read_length_plots
+} from "./plots/read_length_plots";
 
 
 export async function setup_plots() {
     setup_test_plot();
     setup_chromosome_length_plot();
-    setup_chromosome_covered_length_plot();
-    setup_chromosome_coverage_plot();
-    setup_chromosome_coverage_per_bin_plot();
     setup_file_quality_plot();
     setup_chromosome_quality_plot();
     setup_number_reads_plot();
     setup_length_reads_plot();
     setup_file_gap_lengths_plot();
     setup_file_split_counts_plot();
+
+    setup_coverage_plots();
+    setup_cigar_plots();
+    setup_read_quality_plots();
+    setup_read_length_plots();
 
     await update_all_plots();
 
@@ -26,8 +44,6 @@ export async function update_all_plots() {
 
     promises.push(update_test_plot());
     promises.push(update_chromosome_length_plot());
-    promises.push(update_chromosome_covered_length_plot());
-    promises.push(update_chromosome_coverage_plot());
     promises.push(update_file_quality_plot());
     promises.push(update_number_reads_plot());
     promises.push(update_length_reads_plot());
@@ -36,14 +52,23 @@ export async function update_all_plots() {
 
     promises.push(update_chromosome_dependent_plots());
 
-    await Promise.all(promises)
+    update_coverage_plots();
+    update_cigar_plots();
+    update_read_quality_plots();
+    update_read_length_plots();
+
+    await Promise.all(promises);
 }
 
 async function update_chromosome_dependent_plots() {
     let promises = [];
 
-    promises.push(update_chromosome_coverage_per_bin_plot());
     promises.push(update_chromosome_quality_plot());
+
+    update_reference_dependent_coverage_plots();
+    update_reference_dependent_cigar_plots();
+    update_reference_dependent_read_quality_plots();
+    update_reference_dependent_read_length_plots();
 
     await Promise.all(promises);
 }
@@ -159,7 +184,7 @@ async function update_chromosome_length_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            const color = file_info[1];
+            const color = file_info[1][0];
 
             const data = get_dataset(name,"length_of_chromosomes");
 
@@ -186,257 +211,6 @@ async function update_chromosome_length_plot() {
         }
 
         chromosome_length_plot.update();
-    }
-}
-
-let chromosome_covered_length_plot;
-let chromosome_covered_length_data;
-
-const chromosome_covered_length_logarithmic = document.getElementById("chromosome_covered_length_logarithmic")
-
-function setup_chromosome_covered_length_plot() {
-    chromosome_covered_length_data = {
-        labels: chromosome_names,
-        datasets: []
-    };
-
-    let config = {
-        type: 'bar',
-        data: chromosome_covered_length_data,
-        options: {
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Covered Length of Chromosomes"
-                },
-            },
-            locale: "de-DE",
-            responsive: true,
-            maintainAspectRatio: true,
-            scales: {
-                x: {
-                    stacked: true,
-                },
-                y: {
-                    stacked: true
-                }
-            },
-            interaction: {
-                mode: 'index',
-                intersect: false
-            }
-        }
-    };
-
-    chromosome_covered_length_plot = new Chart(
-        document.getElementById('chromosome_covered_length_canvas'),
-        config
-    );
-
-    chromosome_covered_length_logarithmic.addEventListener("change", () => update_chromosome_covered_length_plot());
-
-}
-
-async function update_chromosome_covered_length_plot() {
-    if (chromosome_covered_length_plot) {
-        chromosome_covered_length_data.labels = chromosome_names;
-        chromosome_covered_length_data.datasets = [];
-
-        let file_names = get_file_list();
-
-        for (const file_info of file_names) {
-            if (!file_info[2]) {continue;}
-
-            const name = file_info[0];
-            const color = file_info[1];
-
-            const data = get_dataset(name,"covered_length_of_chromosomes");
-
-            let dataset = {
-                label: name,
-                data: data,
-                backgroundColor: color
-            };
-
-            chromosome_covered_length_data.datasets.push(dataset);
-        }
-
-        const logarithmic = chromosome_covered_length_logarithmic.checked;
-
-        if (logarithmic) {
-            chromosome_covered_length_plot.config.options.scales.y.type="logarithmic";
-            chromosome_covered_length_plot.config.options.scales.y.stacked=false;
-            chromosome_covered_length_plot.config.options.scales.x.stacked=false;
-        }
-        else {
-            chromosome_covered_length_plot.config.options.scales.y.type=undefined;
-            chromosome_covered_length_plot.config.options.scales.y.stacked=true;
-            chromosome_covered_length_plot.config.options.scales.x.stacked=true;
-        }
-
-        chromosome_covered_length_plot.update();
-    }
-}
-
-let chromosome_coverage_plot;
-let chromosome_coverage_data;
-
-function setup_chromosome_coverage_plot() {
-    chromosome_coverage_data = {
-        labels: chromosome_names,
-        datasets: []
-    };
-
-    let config = {
-        type: 'bar',
-        data: chromosome_coverage_data,
-        options: {
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Coverage per Chromosome"
-                },
-            },
-            locale: "de-DE",
-            responsive: true,
-            maintainAspectRatio: true,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            }
-        }
-    };
-
-    chromosome_coverage_plot = new Chart(
-        document.getElementById('chromosome_coverage_canvas'),
-        config
-    );
-}
-
-async function update_chromosome_coverage_plot() {
-    if (chromosome_coverage_plot) {
-        chromosome_coverage_data.labels = chromosome_names;
-        chromosome_coverage_data.datasets = [];
-
-        let file_names = get_file_list();
-
-        for (const file_info of file_names) {
-            if (!file_info[2]) {continue;}
-
-            const name = file_info[0];
-            const color = file_info[1];
-
-            let data = get_dataset(name,"coverage_per_chromosome");
-
-            for (let i = 0; i < data.length; i++) {
-                data[i] = data[i] * 100;
-            }
-
-            let dataset = {
-                label: name,
-                data: data,
-                backgroundColor: color
-            };
-
-            chromosome_coverage_data.datasets.push(dataset);
-        }
-
-        chromosome_coverage_plot.update();
-    }
-}
-
-let chromosome_coverage_per_bin_plot;
-let chromosome_coverage_per_bin_data;
-
-const chromosome_coverage_per_bin_stat = document.getElementById("chromosome_coverage_per_bin_stat");
-
-function setup_chromosome_coverage_per_bin_plot() {
-    chromosome_coverage_per_bin_data = {
-        labels: [],
-        datasets: []
-    };
-
-    let config = {
-        type: 'bar',
-        data: chromosome_coverage_per_bin_data,
-        options: {
-            plugins: {
-                title: {
-                    display: true,
-                    text: "Coverage per Bin on selected Chromosome"
-                },
-            },
-            locale: "de-DE",
-            responsive: true,
-            maintainAspectRatio: true,
-            interaction: {
-                mode: 'index',
-                intersect: false
-            },
-            scales: {
-                x: {
-                    stacked: true,
-                },
-                y: {
-                    stacked: true
-                }
-            },
-            animation: false
-        }
-    };
-
-    chromosome_coverage_per_bin_stat.addEventListener("change", () => update_chromosome_coverage_per_bin_plot())
-
-    chromosome_coverage_per_bin_plot = new Chart(
-        document.getElementById('chromosome_coverage_per_bin_canvas'),
-        config
-    );
-}
-
-async function update_chromosome_coverage_per_bin_plot() {
-    if (chromosome_coverage_per_bin_plot) {
-        chromosome_coverage_per_bin_data.datasets = [];
-
-        let file_names = get_file_list();
-
-        let chromosome = selected_chromosome.value;
-        let stat = chromosome_coverage_per_bin_stat.value;
-
-        let max_bin_count = 0;
-
-        for (const file_info of file_names) {
-            if (!file_info[2]) {continue;}
-
-            const name = file_info[0];
-            const color = file_info[1];
-
-            const dataset_name = chromosome + "_" + stat + "_coverage_per_bin";
-
-            let data = get_dataset(name, dataset_name);
-
-            max_bin_count = Math.max(max_bin_count, data.length);
-
-            for (let i = 0; i < data.length; i++) {
-                data[i] = data[i] * 100;
-            }
-
-            let dataset = {
-                label: name,
-                data: data,
-                backgroundColor: color
-            };
-
-            chromosome_coverage_per_bin_data.datasets.push(dataset);
-        }
-
-        let labels = [];
-
-        for (let i = 0; i < max_bin_count; i++) {
-            labels.push(i);
-        }
-
-        chromosome_coverage_per_bin_data.labels = labels;
-        chromosome_coverage_per_bin_plot.update();
     }
 }
 
@@ -504,7 +278,7 @@ async function update_file_quality_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            const color = file_info[1];
+            const color = file_info[1][0];
 
             let data = get_dataset(name, "file_quality_frequency_map");
 
@@ -600,7 +374,7 @@ async function update_chromosome_quality_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            const color = file_info[1];
+            const color = file_info[1][0];
 
             const dataset_name = chromosome + "_quality_frequency_map";
 
@@ -690,7 +464,7 @@ async function update_number_reads_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            const color = file_info[1];
+            const color = file_info[1][0];
 
             let data = get_dataset(name, "reads_per_chromosome");
 
@@ -780,7 +554,7 @@ async function update_length_reads_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            const color = file_info[1];
+            const color = file_info[1][0];
 
             let stat = length_reads_stat.value;
 
@@ -867,7 +641,7 @@ async function update_file_gap_lengths_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            const color = file_info[1];
+            const color = file_info[1][0];
 
             let gap_lengths = get_dataset(name, "file_gap_lengths");
             let gap_length_frequencies = get_dataset(name, "file_gap_length_frequencies");
@@ -982,7 +756,7 @@ async function update_file_split_counts_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            const color = file_info[1];
+            const color = file_info[1][0];
 
             let split_counts = get_dataset(name, "file_split_counts");
             let split_count_frequencies = get_dataset(name, "file_split_count_frequencies");

@@ -9,7 +9,6 @@ use crate::statistics::calculation::unmapped::UnmappedCalculationData;
 pub mod assembler;
 pub mod unmapped;
 pub mod per_reference;
-pub mod coverage_map;
 pub mod binned;
 pub mod frequency_map;
 

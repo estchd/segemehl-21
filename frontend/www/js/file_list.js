@@ -44,27 +44,22 @@ async function handle_file_input_change() {
             continue;
         }
 
-        let color = getRandomColor();
+        let color = getRandomColors();
 
         add_file(file, color);
-        console.log("file added");
         let promise = process_file(file)
             .then(() => handle_process_file_completion())
             .catch((err) => handle_process_file_fail(err));
 
         promises.push(promise);
-        console.log("file promise created");
     }
     promises.push(rebuild_file_list());
     promises.push(update_all_plots());
 
-    console.log("file started plot update promises started");
     await Promise.all(promises);
-    console.log("file started plot update promises completed");
 }
 
 async function handle_process_file_completion() {
-    console.log("file promise completed");
 
     let promises = [];
 
@@ -91,8 +86,8 @@ async function handle_remove_file_click(file_name) {
     await rebuild_file_list();
 }
 
-async function handle_file_color_change(file_name, new_color) {
-    update_file_color(file_name, new_color);
+async function handle_file_color_change(file_name, new_color, index) {
+    update_file_color(file_name, new_color, index);
     await update_all_plots();
 }
 
@@ -103,10 +98,10 @@ async function rebuild_file_list() {
 
     for (const file of files) {
         let name = file[0];
-        let color = file[1];
+        let colors = file[1];
         let is_loaded = file[2];
 
-        let clone = clone_list_item(name, color, is_loaded);
+        let clone = clone_list_item(name, colors, is_loaded);
         let list_item = clone[0];
         let list_divider = clone[1];
 
@@ -123,8 +118,6 @@ async function rebuild_file_list() {
 
     rebuild_statistic_display();
     await update_all_plots();
-
-    console.log("rebuild file list completed");
 }
 
 function rebuild_statistic_display() {
@@ -229,11 +222,35 @@ function clone_list_item(name, color, is_loaded) {
     name_div.innerHTML = name;
     status_div.appendChild(status_clone);
 
-    let color_picker = list_item_clone.querySelector(".file-list-item-color");
-    color_picker.value = color;
-    color_picker.addEventListener("change", function(event) {
+    let main_color_picker = list_item_clone.querySelector(".file-list-item-color");
+    main_color_picker.value = color[0];
+    main_color_picker.addEventListener("change", function(event) {
         let color = event.target.value;
-        handle_file_color_change(name, color);
+        handle_file_color_change(name, color, 0);
+    });
+    let match_color_picker = list_item_clone.querySelector(".file-list-match-color");
+    match_color_picker.value = color[1];
+    match_color_picker.addEventListener("change", function(event) {
+        let color = event.target.value;
+        handle_file_color_change(name, color, 1);
+    })
+    let insertion_color_picker = list_item_clone.querySelector(".file-list-insertion-color");
+    insertion_color_picker.value = color[2];
+    insertion_color_picker.addEventListener("change", function(event) {
+        let color = event.target.value;
+        handle_file_color_change(name, color, 2);
+    })
+    let deletion_color_picker = list_item_clone.querySelector(".file-list-deletion-color");
+    deletion_color_picker.value = color[3];
+    deletion_color_picker.addEventListener("change", function(event) {
+        let color = event.target.value;
+        handle_file_color_change(name, color, 3);
+    })
+    let skip_color_picker = list_item_clone.querySelector(".file-list-skip-color");
+    skip_color_picker.value = color[4];
+    skip_color_picker.addEventListener("change", function(event) {
+        let color = event.target.value;
+        handle_file_color_change(name, color, 4);
     })
 
     return [list_item_clone, list_divider_clone];
@@ -251,12 +268,69 @@ function clone_loading_status() {
     return loading_status_template.content.firstElementChild.cloneNode(true);
 }
 
-function getRandomColor() {
-    var letters = '0123456789ABCDEF'.split('');
-    var color = '#';
-    for (var i = 0; i < 6; i++ ) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
+function getRandomColors() {
+    let random_hue = Math.random();
+
+    let main_saturation = 1.0;
+    let match_saturation = 1.0;
+    let insertion_saturation = 1.0 - (0.75 / 3.0);
+    let deletion_saturation = 1.0 - 2.0 * (0.75 / 3.0);
+    let skip_saturation = 1.0 - 3.0 * (0.75 / 3.0);
+
+    let main_rgb = HSVtoRGB(random_hue, main_saturation, 1.0);
+    let match_rgb = HSVtoRGB(random_hue, match_saturation, 1.0);
+    let insertion_rgb = HSVtoRGB(random_hue, insertion_saturation, 1.0);
+    let deletion_rgb = HSVtoRGB(random_hue, deletion_saturation, 1.0);
+    let skip_rgb = HSVtoRGB(random_hue, skip_saturation, 1.0);
+
+    let main_color = rgbToHex(main_rgb.r, main_rgb.g, main_rgb.b);
+    let match_color = rgbToHex(match_rgb.r, match_rgb.g, match_rgb.b);
+    let insertion_color = rgbToHex(insertion_rgb.r, insertion_rgb.g, insertion_rgb.b);
+    let deletion_color = rgbToHex(deletion_rgb.r, deletion_rgb.g, deletion_rgb.b);
+    let skip_color = rgbToHex(skip_rgb.r, skip_rgb.g, skip_rgb.b);
+
+    let colors = [main_color, match_color, insertion_color, deletion_color, skip_color];
+
+    return colors;
 }
+
+// copied from https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+function componentToHex(c) {
+    var hex = c.toString(16);
+    return hex.length == 1 ? "0" + hex : hex;
+}
+
+// copied from https://stackoverflow.com/questions/5623838/rgb-to-hex-and-hex-to-rgb
+function rgbToHex(r, g, b) {
+    return "#" + componentToHex(r) + componentToHex(g) + componentToHex(b);
+}
+
+// copied from https://stackoverflow.com/questions/17242144/javascript-convert-hsb-hsv-color-to-rgb-accurately
+function HSVtoRGB(h, s, v) {
+    var r, g, b, i, f, p, q, t;
+    if (arguments.length === 1) {
+        s = h.s, v = h.v, h = h.h;
+    }
+    i = Math.floor(h * 6);
+    f = h * 6 - i;
+    p = v * (1 - s);
+    q = v * (1 - f * s);
+    t = v * (1 - (1 - f) * s);
+    switch (i % 6) {
+        case 0: r = v, g = t, b = p; break;
+        case 1: r = q, g = v, b = p; break;
+        case 2: r = p, g = v, b = t; break;
+        case 3: r = p, g = q, b = v; break;
+        case 4: r = t, g = p, b = v; break;
+        case 5: r = v, g = p, b = q; break;
+    }
+    return {
+        r: Math.round(r * 255),
+        g: Math.round(g * 255),
+        b: Math.round(b * 255)
+    };
+}
+
+
+
 

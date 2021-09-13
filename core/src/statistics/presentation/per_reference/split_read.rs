@@ -9,6 +9,7 @@ use crate::statistics::presentation::assembler::map::PresentationAssemblerMap;
 use rayon::prelude::*;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::statistics::presentation::cigar_operations::CigarOperations;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SplitReadPerReferencePresentationData {
@@ -52,6 +53,12 @@ impl SplitReadPerReferencePresentationData {
 
 	pub fn get_split_count_unmapped_map(&self) -> &PresentationFrequencyMap<usize> {
 		&self.split_count_unmapped_map
+	}
+
+	pub fn get_cigar_operations(&self) -> CigarOperations {
+		self.binned_statistics.get_bins().fold(Default::default(), |a,b|
+			CigarOperations::merge(&a, &b.get_cigar_operations())
+		)
 	}
 
 	pub fn from_calculation_data(value: SplitReadPerReferenceCalculationData, ref_length: u32, mpb: &MultiProgress) -> Self {

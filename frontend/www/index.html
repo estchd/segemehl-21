@@ -14,8 +14,8 @@
         <nav class="navbar navbar-expand-md navbar-dark fixed-top bg-dark px-3">
             <a class="navbar-brand" href="#">Segemehl 21</a>
             <div class="collapse navbar-collapse w-100 h-100 d-flex flex-row">
-                <div class="dropdown flex-grow-1">
-                    <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
+                <div class="dropdown flex-grow-1 me-5">
+                    <button class="btn btn-secondary dropdown-toggle w-100" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
                         Files
                     </button>
                     <ul id="file-dropdown" class="dropdown-menu w-100 border border-dark border-2" aria-labelledby="dropdownMenuButton1">
@@ -25,10 +25,37 @@
                         <li class="file-list-item dropdown-item-text d-flex flex-row justify-content-between">
                             <div class="file-list-item-name d-flex flex-column justify-content-center">
                             </div>
-                            <div class="d-flex flex-row justify-content-end w-25">
-                                <div class="d-flex flex-column justify-content-center me-3 w-50">
-                                    <input type="color" class="file-list-item-color form-control form-control-color" value="#563d7c" title="File Color">
-                                </div>
+                            <div class="d-flex flex-row justify-content-end w-50">
+                                <button class="btn btn-secondary dropdown-toggle w-50 me-3" type="button" data-bs-toggle="dropdown" aria-expanded="false" data-bs-auto-close="outside">
+                                    Colors
+                                </button>
+                                <ul class="dropdown-menu w-100 border border-dark border-2 px-2">
+                                    <li class="d-flex flex-row justify-content-between align-items-stretch">
+                                        <div class="file-list-item-name d-flex flex-column justify-content-center">
+                                            rep1.stat
+                                        </div>
+                                        <div class="d-flex flex-column justify-content-center flex-fill align-items-center">
+                                            <p>Main Color</p>
+                                            <input type="color" class="file-list-item-color form-control form-control-color" value="#563d7c" title="Main Color">
+                                        </div>
+                                        <div class="d-flex flex-column justify-content-center flex-fill align-items-center">
+                                            <p>Match Color</p>
+                                            <input type="color" class="file-list-match-color form-control form-control-color" value="#563d7c" title="Match Color">
+                                        </div>
+                                        <div class="d-flex flex-column justify-content-center flex-fill align-items-center">
+                                            <p>Insertion Color</p>
+                                            <input type="color" class="file-list-insertion-color form-control form-control-color" value="#563d7c" title="Insertion Color">
+                                        </div>
+                                        <div class="d-flex flex-column justify-content-center flex-fill align-items-center">
+                                            <p>Deletion Color</p>
+                                            <input type="color" class="file-list-deletion-color form-control form-control-color" value="#563d7c" title="Deletion Color">
+                                        </div>
+                                        <div class="d-flex flex-column justify-content-center flex-fill align-items-center">
+                                            <p>Skip Color</p>
+                                            <input type="color" class="file-list-skip-color form-control form-control-color" value="#563d7c" title="Skip Color">
+                                        </div>
+                                    </li>
+                                </ul>
                                 <div class="file-list-item-status d-flex flex-column justify-content-center">
                                 </div>
                             </div>
@@ -49,7 +76,6 @@
                         </div>
                     </template>
                 </div>
-                <div class="w-25"></div>
                 <label for="chromosome-select" class="text-light me-2">
                     Selected Chromosome:
                 </label>
@@ -125,6 +151,15 @@
                             <li>
                                 <button class="nav-link" id="split-read-plots-tab" data-bs-toggle="tab" data-bs-target="#split-read-plots-tab-content" type="button" role="tab" aria-controls="split-read-plots-tab" aria-selected="false">Split Read Plots</button>
                             </li>
+                            <li>
+                                <button class="nav-link" id="read-quality-plots-tab" data-bs-toggle="tab" data-bs-target="#read-quality-plots-tab-content" type="button" role="tab" aria-controls="read-quality-plots-tab" aria-selected="false">Read Quality Plots</button>
+                            </li>
+                            <li>
+                                <button class="nav-link" id="coverage-plots-tab" data-bs-toggle="tab" data-bs-target="#coverage-plots-tab-content" type="button" role="tab" aria-controls="coverage-plots-tab" aria-selected="false">Coverage Plots</button>
+                            </li>
+                            <li>
+                                <button class="nav-link" id="cigar-plots-tab" data-bs-toggle="tab" data-bs-target="#cigar-plots-tab-content" type="button" role="tab" aria-controls="cigar-plots-tab" aria-selected="false">CIGAR Plots</button>
+                            </li>
                         </ul>
                         <div class="tab-content" id="plot-tabs-content">
                             <div class="tab-pane fade show active" id="single-read-plots-tab-content" role="tabpanel" aria-labelledby="single-read-plots-tab">
@@ -142,29 +177,6 @@
                                         <p>Logarithmic Scale: <input id="length_of_chromosomes_logarithmic" type="checkbox"/></p>
                                         <div class="w-100">
                                             <canvas id="chromosome_length_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div style="display: inline">
-                                        <h4 style="width: 600px">Covered Length of Chromosomes</h4>
-                                        <p>Logarithmic Scale: <input id="chromosome_covered_length_logarithmic" type="checkbox"/></p>
-                                        <div class="w-100">
-                                            <canvas id="chromosome_covered_length_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div style="display: inline">
-                                        <h4 style="width: 600px">Coverage of Chromosomes</h4>
-                                        <div class="w-100">
-                                            <canvas id="chromosome_coverage_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div style="display: inline">
-                                        <h4 style="width: 600px">Coverage per Bin on selected Chromosome</h4>
-                                        <select id="chromosome_coverage_per_bin_stat">
-                                            <option value="Total">Total</option>
-                                            <option value="Average">Average</option>
-                                        </select>
-                                        <div class="w-100">
-                                            <canvas id="chromosome_coverage_per_bin_canvas"></canvas>
                                         </div>
                                     </div>
                                     <div style="display: inline">
@@ -214,6 +226,90 @@
                                 <p>Logarithmic Scale: <input id="file_split_counts_logarithmic" type="checkbox"/></p>
                                 <div class="w-100">
                                     <canvas id="file_split_counts_canvas"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="read-quality-plots-tab-content" role="tabpanel" aria-labelledby="read-quality-plots-tab">
+                                <h4 style="width: 600px">Read Quality Map for whole File</h4>
+                                <p>Logarithmic Scale: <input id="read_quality_file_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="read_quality_file_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Read Quality Map for selected Reference</h4>
+                                <p>Logarithmic Scale: <input id="read_quality_selected_reference_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="read_quality_selected_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Read Quality per Reference</h4>
+                                <label for="read_quality_per_reference_stat">Calculated Stat: </label>
+                                <select id="read_quality_per_reference_stat">
+                                    <option value="Mean">Mean</option>
+                                    <option value="Mode">Mode</option>
+                                    <option value="Median">Median</option>
+                                    <option value="Min">Min</option>
+                                    <option value="Max">Max</option>
+                                </select>
+                                <div class="w-100">
+                                    <canvas id="read_quality_per_reference_canvas"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="coverage-plots-tab-content" role="tabpanel" aria-labelledby="coverage-plots-tab">
+                                <h4 style="width: 600px">Read Counts per Reference</h4>
+                                <p>Logarithmic Scale: <input id="read_counts_per_reference_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="read_counts_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Read Counts per Bin on Reference</h4>
+                                <p>Logarithmic Scale: <input id="read_counts_per_bin_on_reference_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="read_counts_per_bin_on_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Total Read Length per Reference</h4>
+                                <p>Logarithmic Scale: <input id="total_read_length_reference_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="total_read_length_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Total Read Length per Bin on Reference</h4><p>Logarithmic Scale:
+                                <input id="total_read_length_per_bin_on_reference_logarithmic" type="checkbox"/></p>
+
+                                <div class="w-100">
+                                    <canvas id="total_read_length_per_bin_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Coverage per Reference</h4>
+                                <div class="w-100">
+                                    <canvas id="coverage_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Coverage per Bin on Reference</h4>
+                                <div class="w-100">
+                                    <canvas id="coverage_per_bin_canvas"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="cigar-plots-tab-content" role="tabpanel" aria-labelledby="cigar-plots-tab">
+                                <h4 style="width: 600px">CIGAR Operations for whole File (Total Count)</h4>
+                                <p>Logarithmic Scale: <input id="cigar_total_file_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="cigar_total_file_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">CIGAR Operations for whole File (Percentage)</h4>
+                                <div class="w-100">
+                                    <canvas id="cigar_percentage_file_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">CIGAR Operations per Reference (Total Count)</h4>
+                                <p>Logarithmic Scale: <input id="cigar_total_per_reference_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="cigar_total_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">CIGAR Operations per Reference (Percentage)</h4>
+                                <div class="w-100">
+                                    <canvas id="cigar_percentage_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">CIGAR Operations per Bin (Total Count)</h4>
+                                <p>Logarithmic Scale: <input id="cigar_total_per_bin_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="cigar_total_per_bin_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">CIGAR Operations per Bin (Percentage)</h4>
+                                <div class="w-100">
+                                    <canvas id="cigar_percentage_per_bin_canvas"></canvas>
                                 </div>
                             </div>
                         </div>

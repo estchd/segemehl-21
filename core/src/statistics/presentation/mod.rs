@@ -7,6 +7,7 @@ use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::util::get_quality_frequency_map;
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
+use crate::statistics::presentation::cigar_operations::CigarOperations;
 
 pub mod frequency_map;
 pub mod binned;
@@ -14,6 +15,7 @@ pub mod per_reference;
 pub mod unmapped;
 pub mod assembler;
 pub mod record;
+pub mod cigar_operations;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PresentationData {
@@ -64,6 +66,12 @@ impl PresentationData {
 
     pub fn get_unmapped_single_data(&self) -> &UnmappedPresentationData {
         &self.unmapped
+    }
+
+    pub fn get_cigar_operations(&self) -> CigarOperations {
+        self.per_reference.iter().fold(Default::default(), |a,b|{
+            CigarOperations::merge(&a, &b.get_cigar_operations())
+        })
     }
 
     pub fn get_least_read_count(&self) -> u64 {

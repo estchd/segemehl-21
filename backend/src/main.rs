@@ -135,7 +135,6 @@ fn main() {
             println!("Mode Read Length: {}", statistic.get_read_length_map().get_max_frequency().unwrap_or((0, 0)).0);
             println!("Smallest Read Length: {}", statistic.get_read_length_map().get_min_entry().unwrap_or((0,0)).0);
             println!("Biggest Read Length: {}", statistic.get_read_length_map().get_max_entry().unwrap_or((0,0)).0);
-            println!("Total Covered Length: {}", statistic.get_covered_length());
             println!();
         }
     }

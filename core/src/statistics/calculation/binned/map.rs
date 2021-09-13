@@ -94,8 +94,8 @@ impl BinnedStatisticsCalculationMap {
 
 			Self::add_cigars_to_bin(bin, cigars);
 
-			bin.coverage.fetch_add(1, Ordering::Relaxed);
-			bin.coverage_times_area.fetch_add(length_in_bin as usize, Ordering::Relaxed);
+			bin.read_count.fetch_add(1, Ordering::Relaxed);
+			bin.total_read_length.fetch_add(length_in_bin as usize, Ordering::Relaxed);
 
 			return;
 		}
@@ -105,8 +105,8 @@ impl BinnedStatisticsCalculationMap {
 
 		let bin = &self.bins[start_bin.bin_index as usize];
 
-		bin.coverage.fetch_add(1, Ordering::Relaxed);
-		bin.coverage_times_area.fetch_add(length_in_start_bin as usize, Ordering::Relaxed);
+		bin.read_count.fetch_add(1, Ordering::Relaxed);
+		bin.total_read_length.fetch_add(length_in_start_bin as usize, Ordering::Relaxed);
 
 		let start_bin_cigars = front_iterator.next_for_ref_length(length_in_start_bin);
 
@@ -114,8 +114,8 @@ impl BinnedStatisticsCalculationMap {
 
 		let bin = &self.bins[end_bin.bin_index as usize];
 
-		bin.coverage.fetch_add(1, Ordering::Relaxed);
-		bin.coverage_times_area.fetch_add(length_in_end_bin as usize, Ordering::Relaxed);
+		bin.read_count.fetch_add(1, Ordering::Relaxed);
+		bin.total_read_length.fetch_add(length_in_end_bin as usize, Ordering::Relaxed);
 
 		let end_bin_cigars = back_iterator.next_for_ref_length(length_in_end_bin);
 
@@ -128,8 +128,8 @@ impl BinnedStatisticsCalculationMap {
 		for bin in first_full_bin..end_bin.bin_index {
 			let bin = &self.bins[bin as usize];
 
-			bin.coverage.fetch_add(1, Ordering::Relaxed);
-			bin.coverage_times_area.fetch_add(self.bin_size.get() as usize, Ordering::Relaxed);
+			bin.read_count.fetch_add(1, Ordering::Relaxed);
+			bin.total_read_length.fetch_add(self.bin_size.get() as usize, Ordering::Relaxed);
 
 			let bin_cigars = front_iterator.next_for_ref_length(bin.get_length());
 
@@ -288,18 +288,18 @@ mod calculation_map_creation {
 
 			assert_eq!(
 				0,
-				bin.get_coverage(),
+				bin.get_read_count(),
 				"Got Fresh Bin with Coverage, Index: {}, Coverage: {}",
 				i,
-				bin.get_coverage()
+				bin.get_read_count()
 			);
 
 			assert_eq!(
 				0.0,
-				bin.get_average_coverage(),
+				bin.get_coverage(),
 				"Got Fresh Bin with Average Coverage, Index: {}, Average Coverage: {}",
 				i,
-				bin.get_average_coverage()
+				bin.get_coverage()
 			);
 
 			expected_bin_start = bin.end + 1;
@@ -335,18 +335,18 @@ mod calculation_map_creation {
 
 		assert_eq!(
 			0,
-			bin.get_coverage(),
+			bin.get_read_count(),
 			"Got Fresh Bin with Coverage, Index: {}, Coverage: {}",
 			i,
-			bin.get_coverage()
+			bin.get_read_count()
 		);
 
 		assert_eq!(
 			0.0,
-			bin.get_average_coverage(),
+			bin.get_coverage(),
 			"Got Fresh Bin with Average Coverage, Index: {}, Average Coverage: {}",
 			i,
-			bin.get_average_coverage()
+			bin.get_coverage()
 		);
 	}
 
@@ -400,7 +400,7 @@ mod calculation_map_insertion {
 
 		let map_bin_iter = map.bins
 			.into_iter()
-			.map(|item| (item.coverage.into_inner(), item.coverage_times_area.into_inner()));
+			.map(|item| (item.read_count.into_inner(), item.total_read_length.into_inner()));
 		let expected_bin_iter = expected_bins.into_iter();
 
 		let comparison_iter = map_bin_iter

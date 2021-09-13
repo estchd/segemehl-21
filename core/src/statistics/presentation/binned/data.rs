@@ -2,6 +2,7 @@ use crate::statistics::calculation::binned::data::BinStatisticsCalculationData;
 use crate::util::length;
 
 use serde_derive::{Deserialize, Serialize};
+use crate::statistics::presentation::cigar_operations::CigarOperations;
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct BinStatisticsPresentationData {
@@ -10,17 +11,11 @@ pub struct BinStatisticsPresentationData {
 	#[serde(rename = "e")]
 	end: u32,
 	#[serde(rename = "c")]
-	coverage: u32,
+	read_count: u64,
 	#[serde(rename = "cta")]
-	coverage_times_area: u64,
-	#[serde(rename = "m")]
-	alignment_matches: u64,
-	#[serde(rename = "i")]
-	insertions: u64,
-	#[serde(rename = "d")]
-	deletions: u64,
-	#[serde(rename = "sk")]
-	skips: u64
+	total_read_length: u64,
+	#[serde(rename = "co")]
+	cigar_operations: CigarOperations
 }
 
 impl BinStatisticsPresentationData {
@@ -31,12 +26,9 @@ impl BinStatisticsPresentationData {
 		Ok(BinStatisticsPresentationData {
 			start: lhs.start,
 			end: lhs.end,
-			coverage: lhs.coverage + rhs.coverage,
-			coverage_times_area: lhs.coverage_times_area + rhs.coverage_times_area,
-			alignment_matches: lhs.alignment_matches + rhs.alignment_matches,
-			insertions: lhs.insertions + rhs.insertions,
-			deletions: lhs.deletions + rhs.deletions,
-			skips: lhs.skips + rhs.skips
+			read_count: lhs.read_count + rhs.read_count,
+			total_read_length: lhs.total_read_length + rhs.total_read_length,
+			cigar_operations: CigarOperations::merge(&lhs.cigar_operations, &rhs.cigar_operations)
 		})
 	}
 
@@ -56,13 +48,23 @@ impl BinStatisticsPresentationData {
 	}
 
 	#[inline(always)]
-	pub fn get_coverage(&self) -> u32 {
-		self.coverage
+	pub fn get_read_count(&self) -> u64 {
+		self.read_count
 	}
 
 	#[inline(always)]
-	pub fn get_average_coverage(&self) -> f64 {
-		self.coverage_times_area as f64 / self.get_length() as f64
+	pub fn get_total_read_length(&self) -> u64 {
+		self.total_read_length
+	}
+
+	#[inline(always)]
+	pub fn get_cigar_operations(&self) -> CigarOperations {
+		self.cigar_operations
+	}
+
+	#[inline(always)]
+	pub fn get_coverage(&self) -> f64 {
+		self.total_read_length as f64 / self.get_length() as f64
 	}
 }
 
@@ -71,12 +73,9 @@ impl Default for BinStatisticsPresentationData {
 		BinStatisticsPresentationData {
 			start: 0,
 			end: 0,
-			coverage: Default::default(),
-			coverage_times_area: Default::default(),
-			alignment_matches: 0,
-			insertions: 0,
-			deletions: 0,
-			skips: 0
+			read_count: Default::default(),
+			total_read_length: Default::default(),
+			cigar_operations: Default::default(),
 		}
 	}
 }
@@ -86,12 +85,14 @@ impl From<BinStatisticsCalculationData> for BinStatisticsPresentationData {
 		BinStatisticsPresentationData {
 			start: data.start,
 			end: data.end,
-			coverage: data.coverage.into_inner(),
-			coverage_times_area: data.coverage_times_area.into_inner() as u64,
-			alignment_matches: data.alignment_matches.into_inner() as u64,
-			insertions: data.insertions.into_inner() as u64,
-			deletions: data.deletions.into_inner() as u64,
-			skips: data.skips.into_inner() as u64
+			read_count: data.read_count.into_inner() as u64,
+			total_read_length: data.total_read_length.into_inner() as u64,
+			cigar_operations: CigarOperations {
+				alignment_matches: data.alignment_matches.into_inner() as u64,
+				insertions: data.insertions.into_inner() as u64,
+				deletions: data.deletions.into_inner() as u64,
+				skips: data.skips.into_inner() as u64,
+			}
 		}
 	}
 }

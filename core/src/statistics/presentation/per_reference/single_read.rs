@@ -3,6 +3,7 @@ use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::binned::map::BinnedStatisticsPresentationMap;
 use crate::statistics::calculation::per_reference::single_read::SingleReadPerReferenceCalculationData;
 use crate::util::get_quality_frequency_map;
+use crate::statistics::presentation::cigar_operations::CigarOperations;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SingleReadPerReferencePresentationData {
@@ -26,6 +27,12 @@ impl SingleReadPerReferencePresentationData {
 
     pub fn get_binned_statistics(&self) -> &BinnedStatisticsPresentationMap {
         &self.binned_statistics
+    }
+
+    pub fn get_cigar_operations(&self) -> CigarOperations {
+        self.binned_statistics.get_bins().fold(Default::default(), |a,b|
+            CigarOperations::merge(&a, &b.get_cigar_operations())
+        )
     }
 }
 

@@ -1,4 +1,4 @@
-use std::sync::atomic::{AtomicU32, AtomicUsize, Ordering};
+use std::sync::atomic::{AtomicUsize, Ordering};
 
 use crate::util::length;
 
@@ -6,8 +6,8 @@ use crate::util::length;
 pub struct BinStatisticsCalculationData {
 	pub(crate) start: u32,
 	pub(crate) end: u32,
-	pub(crate) coverage: AtomicU32,
-	pub(crate) coverage_times_area: AtomicUsize,
+	pub(crate) read_count: AtomicUsize,
+	pub(crate) total_read_length: AtomicUsize,
 	pub(crate) alignment_matches: AtomicUsize,
 	pub(crate) insertions: AtomicUsize,
 	pub(crate) deletions: AtomicUsize,
@@ -19,8 +19,8 @@ impl BinStatisticsCalculationData {
 		BinStatisticsCalculationData {
 			start,
 			end,
-			coverage: Default::default(),
-			coverage_times_area: Default::default(),
+			read_count: Default::default(),
+			total_read_length: Default::default(),
 			alignment_matches: Default::default(),
 			insertions: Default::default(),
 			deletions: Default::default(),
@@ -44,12 +44,17 @@ impl BinStatisticsCalculationData {
 	}
 
 	#[inline(always)]
-	pub fn get_coverage(&self) -> u32 {
-		self.coverage.load(Ordering::Relaxed)
+	pub fn get_read_count(&self) -> usize {
+		self.read_count.load(Ordering::Relaxed)
 	}
 
 	#[inline(always)]
-	pub fn get_average_coverage(&self) -> f64 {
-		self.coverage_times_area.load(Ordering::Relaxed) as f64 / self.get_length() as f64
+	pub fn get_total_read_length(&self) -> usize {
+		self.total_read_length.load(Ordering::Relaxed)
+	}
+
+	#[inline(always)]
+	pub fn get_coverage(&self) -> f64 {
+		self.total_read_length.load(Ordering::Relaxed) as f64 / self.get_length() as f64
 	}
 }

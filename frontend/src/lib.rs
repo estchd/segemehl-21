@@ -46,11 +46,6 @@ pub struct PerFileStatistics {
     pub mean_length_of_chromosomes: f64,
     pub shortest_chromosome_length: u32,
     pub longest_chromosome_length: u32,
-
-    pub median_chromosome_coverage: f64,
-    pub mean_chromosome_coverage: f64,
-    pub least_chromosome_coverage: f64,
-    pub most_chromosome_coverage: f64,
 }
 
 #[wasm_bindgen]
@@ -88,34 +83,6 @@ pub fn generate_per_file_stats(file_name: String) -> Option<PerFileStatistics> {
     for chromosome in statistics.get_per_reference_data() {
         chromosome_length_map.add_entry(chromosome.get_reference_length())
     }
-
-    let coverages: Vec<f64> = statistics.get_per_reference_data()
-        .map(|item| item.get_covered_percentage())
-        .collect();
-
-    let least_chromosome_coverage = *coverages.iter().reduce(|a,b| {
-        if a <= b {
-            a
-        }
-        else {
-            b
-        }
-    }).unwrap_or(&0.0);
-    let most_chromosome_coverage = *coverages.iter().reduce(|a,b| {
-        if a >= b {
-            a
-        }
-        else {
-            b
-        }
-    }).unwrap_or(&0.0);
-
-    let coverage_sum: f64 = coverages.iter().sum();
-
-    let mean_chromosome_coverage: f64 = coverage_sum / coverages.len() as f64;
-
-    let median_chromosome_coverage = least_chromosome_coverage + most_chromosome_coverage / 2.0;
-
     let (mode_length_of_chromosomes, _) = chromosome_length_map.get_max_frequency().unwrap_or((0,0));
 
     let complete_read_length_map = statistics.get_complete_read_length_map();
@@ -139,10 +106,6 @@ pub fn generate_per_file_stats(file_name: String) -> Option<PerFileStatistics> {
         mean_length_of_chromosomes,
         shortest_chromosome_length,
         longest_chromosome_length,
-        median_chromosome_coverage,
-        mean_chromosome_coverage,
-        least_chromosome_coverage,
-        most_chromosome_coverage
     };
 
     return Some(statistics);
