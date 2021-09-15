@@ -15,10 +15,10 @@ pub use segemehl_21_core::{
 use crate::command_line::CommandLineParameters;
 use crate::reader::get_parallel_reader;
 use segemehl_21_core::{
-    statistics::calculation::CalculationData,
-    statistics::calculation::binned::BinConfig,
-    util::get_record_length,
-    statistics::presentation::PresentationData
+	statistics::calculation::CalculationData,
+	statistics::calculation::binned::BinConfig,
+	util::get_record_length_on_reference,
+	statistics::presentation::PresentationData
 };
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::convert::TryInto;
@@ -96,7 +96,7 @@ fn main() {
 
     reader.into_par_iter().filter_map(|item| item.ok()).for_each(|record| {
         let total_records = total_record_stats.0.fetch_add(1, Ordering::Relaxed);
-        let _ = total_record_stats.1.fetch_add(get_record_length(&record) as usize, Ordering::Relaxed);
+        let _ = total_record_stats.1.fetch_add(get_record_length_on_reference(&record) as usize, Ordering::Relaxed);
 
         calculation_data.add_record(record).unwrap();
 
@@ -128,13 +128,13 @@ fn main() {
             println!();
             println!("Reference Name: {}", statistic.get_reference_name());
             println!("Reference Length: {}", statistic.get_reference_length());
-            println!("Records for Reference: {}", statistic.get_read_length_map().get_frequency_sum());
-            println!("Total Record Length for Reference: {}", statistic.get_read_length_map().get_weighted_frequency_sum());
-            println!("Mean Read Length: {}", statistic.get_read_length_map().get_mean_frequency().unwrap_or(0.0));
-            println!("Median Read Length: {}", statistic.get_read_length_map().get_median_frequency().unwrap_or(0.0));
-            println!("Mode Read Length: {}", statistic.get_read_length_map().get_max_frequency().unwrap_or((0, 0)).0);
-            println!("Smallest Read Length: {}", statistic.get_read_length_map().get_min_entry().unwrap_or((0,0)).0);
-            println!("Biggest Read Length: {}", statistic.get_read_length_map().get_max_entry().unwrap_or((0,0)).0);
+            println!("Records for Reference: {}", statistic.get_read_length_on_reference_map().get_frequency_sum());
+            println!("Total Record Length for Reference: {}", statistic.get_read_length_on_reference_map().get_weighted_frequency_sum());
+            println!("Mean Read Length: {}", statistic.get_read_length_on_reference_map().get_mean_frequency().unwrap_or(0.0));
+            println!("Median Read Length: {}", statistic.get_read_length_on_reference_map().get_median_frequency().unwrap_or(0.0));
+            println!("Mode Read Length: {}", statistic.get_read_length_on_reference_map().get_max_frequency().unwrap_or((0, 0)).0);
+            println!("Smallest Read Length: {}", statistic.get_read_length_on_reference_map().get_min_entry().unwrap_or((0, 0)).0);
+            println!("Biggest Read Length: {}", statistic.get_read_length_on_reference_map().get_max_entry().unwrap_or((0, 0)).0);
             println!();
         }
     }

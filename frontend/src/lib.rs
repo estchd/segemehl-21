@@ -85,7 +85,7 @@ pub fn generate_per_file_stats(file_name: String) -> Option<PerFileStatistics> {
     }
     let (mode_length_of_chromosomes, _) = chromosome_length_map.get_max_frequency().unwrap_or((0,0));
 
-    let complete_read_length_map = statistics.get_complete_read_length_map();
+    let complete_read_length_map = statistics.get_read_length_on_reference_map();
 
     let statistics = PerFileStatistics {
         number_reads_in_file: complete_read_length_map.get_frequency_sum(),

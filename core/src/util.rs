@@ -50,8 +50,12 @@ pub fn get_record_name_as_string(record: &Record) -> Result<String, ()> {
 	String::from_utf8(vec).map_err(|_| ())
 }
 
-pub fn get_record_length(record: &Record) -> u32 {
+pub fn get_record_length_on_reference(record: &Record) -> u32 {
 	(get_record_end(record) - get_record_start(record)) + 1
+}
+
+pub fn get_record_length_sequence(record: &Record) -> u32 {
+	record.query_len()
 }
 
 pub fn get_record_mapping_quality(record: &Record) -> u8 {

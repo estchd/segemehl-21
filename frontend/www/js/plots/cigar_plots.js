@@ -1,4 +1,5 @@
-import {get_chromosome_list, get_dataset, get_file_list} from "../wasm_binding";
+import {get_reference_list, get_dataset, get_file_list} from "../wasm_binding";
+import {linking_update_selected_reference} from "../plots";
 
 export function setup_cigar_plots() {
     setup_cigar_total_file_plot();
@@ -10,7 +11,7 @@ export function setup_cigar_plots() {
 }
 
 export function update_cigar_plots() {
-    reference_names = get_chromosome_list();
+    reference_names = get_reference_list();
 
     update_cigar_total_file_plot();
     update_cigar_total_per_reference_plot();
@@ -243,7 +244,14 @@ function setup_cigar_total_per_reference_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            onClick: function (_, elements) {
+                let element = elements[0];
+
+                if (element) {
+                    linking_update_selected_reference(element.index);
+                }
+            }
         }
     };
 
@@ -253,7 +261,6 @@ function setup_cigar_total_per_reference_plot() {
     );
 
     cigar_total_per_reference_logarithmic.addEventListener("change", () => update_cigar_total_per_reference_plot());
-
 }
 
 function update_cigar_total_per_reference_plot() {
@@ -378,7 +385,14 @@ function setup_cigar_percentage_per_reference_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            onClick: function (_, elements) {
+                let element = elements[0];
+
+                if (element) {
+                    linking_update_selected_reference(element.index);
+                }
+            }
         }
     };
 

@@ -1,4 +1,5 @@
-import {get_chromosome_list, get_dataset, get_file_list} from "../wasm_binding";
+import {get_reference_list, get_dataset, get_file_list} from "../wasm_binding";
+import {linking_update_selected_reference} from "../plots";
 
 export function setup_coverage_plots() {
     setup_read_counts_per_reference_plot();
@@ -10,7 +11,7 @@ export function setup_coverage_plots() {
 }
 
 export function update_coverage_plots() {
-    reference_names = get_chromosome_list();
+    reference_names = get_reference_list();
 
     update_read_counts_per_reference_plot();
     update_total_read_length_per_reference_plot();
@@ -61,7 +62,14 @@ function setup_read_counts_per_reference_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            onClick: function (_, elements) {
+                let element = elements[0];
+
+                if (element) {
+                    linking_update_selected_reference(element.index);
+                }
+            }
         }
     };
 
@@ -180,7 +188,7 @@ function update_read_counts_per_bin_on_reference_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const dataset_name = reference + "_read_count_per_bin";
+            const dataset_name = reference + "_read_counts_per_bin";
 
             let data = get_dataset(name, dataset_name);
 
@@ -250,7 +258,14 @@ function setup_total_read_length_per_reference_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            onClick: function (_, elements) {
+                let element = elements[0];
+
+                if (element) {
+                    linking_update_selected_reference(element.index);
+                }
+            }
         }
     };
 
@@ -461,6 +476,13 @@ function setup_coverage_per_reference_plot() {
                 intersect: false
             },
             animation: false,
+            onClick: function (_, elements) {
+                let element = elements[0];
+
+                if (element) {
+                    linking_update_selected_reference(element.index);
+                }
+            }
         }
     };
 

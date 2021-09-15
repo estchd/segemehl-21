@@ -1,4 +1,5 @@
-import {get_chromosome_list, get_dataset, get_file_list} from "../wasm_binding";
+import {get_reference_list, get_dataset, get_file_list} from "../wasm_binding";
+import {linking_update_selected_reference} from "../plots";
 
 export function setup_read_quality_plots() {
     setup_read_quality_file_plot();
@@ -7,7 +8,7 @@ export function setup_read_quality_plots() {
 }
 
 export function update_read_quality_plots() {
-    reference_names = get_chromosome_list();
+    reference_names = get_reference_list();
 
     update_read_quality_file_plot();
     update_read_quality_per_reference_plot();
@@ -234,6 +235,13 @@ function setup_read_quality_per_reference_plot() {
                 },
                 y: {
                     stacked: false
+                }
+            },
+            onClick: function (_, elements) {
+                let element = elements[0];
+
+                if (element) {
+                    linking_update_selected_reference(element.index);
                 }
             }
         }

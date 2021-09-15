@@ -2,7 +2,7 @@ use crate::statistics::presentation::record::flags::PresentationFlags;
 
 use serde_derive::{Deserialize, Serialize};
 use bam::Record;
-use crate::util::{get_record_name_as_string, get_record_mapping_quality, get_record_length, get_record_start, get_record_end};
+use crate::util::{get_record_name_as_string, get_record_mapping_quality, get_record_length_on_reference, get_record_start, get_record_end};
 use std::convert::TryFrom;
 
 pub mod flags;
@@ -50,7 +50,7 @@ impl TryFrom<Record> for PresentationRecord {
         let name = get_record_name_as_string(&record)?;
         let flags = record.flag().into();
         let mapping_quality = get_record_mapping_quality(&record);
-        let length = get_record_length(&record);
+        let length = get_record_length_on_reference(&record);
         let start = get_record_start(&record);
         let end = get_record_end(&record);
 

@@ -3,7 +3,7 @@ import {rebuild_numeric_statistics} from "./numeric_statistics";
 import {update_all_plots} from "./plots";
 import {
     add_file,
-    get_chromosome_list,
+    get_reference_list,
     get_file_list,
     generate_per_file_stats,
     process_file,
@@ -143,7 +143,7 @@ function rebuild_statistic_display() {
 function rebuild_chromosome_list() {
     clear_chromosome_select();
 
-    let chromosome_list = get_chromosome_list();
+    let chromosome_list = get_reference_list();
 
     for (const chromosome of chromosome_list) {
         let item = clone_chromosome_select_item(chromosome);

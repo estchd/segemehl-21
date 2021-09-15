@@ -2,7 +2,7 @@ use serde_derive::{Deserialize, Serialize};
 use std::convert::TryFrom;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::calculation::unmapped::split_read::UnmappedSplitReadCalculationData;
-use crate::util::get_record_length;
+use crate::util::get_record_length_on_reference;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct UnmappedSplitReadPresentationData {
@@ -35,7 +35,7 @@ impl TryFrom<UnmappedSplitReadCalculationData> for UnmappedSplitReadPresentation
             let records = assembler.associated_records.into_inner().map_err(|_| ())?;
 
             for record in records {
-                map.add_entry(get_record_length(&record));
+                map.add_entry(get_record_length_on_reference(&record));
             }
         }
 

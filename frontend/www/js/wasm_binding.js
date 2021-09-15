@@ -34,7 +34,7 @@ export function setup_functions(
 
 }
 
-export function get_chromosome_list() {
+export function get_reference_list() {
     return get_chromosome_names_func();
 }
 

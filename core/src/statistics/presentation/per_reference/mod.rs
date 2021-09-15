@@ -36,10 +36,17 @@ impl PerReferencePresentationData {
         &self.split_read_data
     }
 
-    pub fn get_read_length_map(&self) -> PresentationFrequencyMap<u32> {
+    pub fn get_read_length_on_reference_map(&self) -> PresentationFrequencyMap<u32> {
         PresentationFrequencyMap::merge(
-            self.single_read_data.get_read_length_map(),
-            self.split_read_data.get_read_length_map()
+            self.single_read_data.get_read_length_on_reference_map(),
+            self.split_read_data.get_read_length_on_reference_map()
+        )
+    }
+
+    pub fn get_read_length_sequence_map(&self) -> PresentationFrequencyMap<u32> {
+        PresentationFrequencyMap::merge(
+            self.single_read_data.get_read_length_sequence_map(),
+            self.split_read_data.get_read_length_sequence_map()
         )
     }
 

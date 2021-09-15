@@ -5,7 +5,7 @@ use crate::statistics::calculation::per_reference::single_read::SingleReadPerRef
 use crate::header::reference_sequence_line::reference_sequence::ReferenceSequence;
 use bam::Record;
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
-use crate::util::{get_record_length};
+use crate::util::{get_record_length_on_reference};
 use crate::statistics::calculation::binned::BinConfig;
 use crate::statistics::calculation::per_reference::split_read::SplitReadPerReferenceCalculationData;
 
@@ -36,7 +36,7 @@ impl PerReferenceCalculationData {
     }
 
     pub fn add_record(&self, record: Record) -> Result<(),()> {
-        let read_length = get_record_length(&record);
+        let read_length = get_record_length_on_reference(&record);
 
         self.read_length_map.add_entry(read_length);
 

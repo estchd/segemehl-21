@@ -152,6 +152,9 @@
                                 <button class="nav-link" id="split-read-plots-tab" data-bs-toggle="tab" data-bs-target="#split-read-plots-tab-content" type="button" role="tab" aria-controls="split-read-plots-tab" aria-selected="false">Split Read Plots</button>
                             </li>
                             <li>
+                                <button class="nav-link" id="read-length-plots-tab" data-bs-toggle="tab" data-bs-target="#read-length-plots-tab-content" type="button" role="tab" aria-controls="read-length-plots-tab" aria-selected="false">Read Length Plots</button>
+                            </li>
+                            <li>
                                 <button class="nav-link" id="read-quality-plots-tab" data-bs-toggle="tab" data-bs-target="#read-quality-plots-tab-content" type="button" role="tab" aria-controls="read-quality-plots-tab" aria-selected="false">Read Quality Plots</button>
                             </li>
                             <li>
@@ -177,20 +180,6 @@
                                         <p>Logarithmic Scale: <input id="length_of_chromosomes_logarithmic" type="checkbox"/></p>
                                         <div class="w-100">
                                             <canvas id="chromosome_length_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div style="display: inline">
-                                        <h4 style="width: 600px">Quality Frequency Map for Whole File</h4>
-                                        <p>Logarithmic Scale: <input id="file_quality_logarithmic" type="checkbox"/></p>
-                                        <div class="w-100">
-                                            <canvas id="file_quality_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div style="display: inline">
-                                        <h4 style="width: 600px">Quality Frequency Map for selected Chromosome</h4>
-                                        <p>Logarithmic Scale: <input id="chromosome_quality_logarithmic" type="checkbox"/></p>
-                                        <div class="w-100">
-                                            <canvas id="chromosome_quality_canvas"></canvas>
                                         </div>
                                     </div>
                                     <div style="display: inline">
@@ -226,6 +215,40 @@
                                 <p>Logarithmic Scale: <input id="file_split_counts_logarithmic" type="checkbox"/></p>
                                 <div class="w-100">
                                     <canvas id="file_split_counts_canvas"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="read-length-plots-tab-content" role="tabpanel" aria-labelledby="read-length-plots-tab">
+                                <h4 style="width: 600px">Length of a Read (Read Sequence) per File</h4>
+                                <div class="w-100">
+                                    <canvas id="read_length_sequence_file_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Length of a Read (On the Reference) per File</h4>
+                                <div class="w-100">
+                                    <canvas id="read_length_reference_file_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Length of a Read (Read Sequence) per Reference</h4>
+                                <label for="read_length_sequence_per_reference_stat">Calculated Stat: </label>
+                                <select id="read_length_sequence_per_reference_stat">
+                                    <option value="Mean">Mean</option>
+                                    <option value="Mode">Mode</option>
+                                    <option value="Median">Median</option>
+                                    <option value="Shortest">Shortest</option>
+                                    <option value="Longest">Longest</option>
+                                </select>
+                                <div class="w-100">
+                                    <canvas id="read_length_sequence_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Length of a Read (On the Reference) per Reference</h4>
+                                <label for="read_length_reference_per_reference_stat">Calculated Stat: </label>
+                                <select id="read_length_reference_per_reference_stat">
+                                    <option value="Mean">Mean</option>
+                                    <option value="Mode">Mode</option>
+                                    <option value="Median">Median</option>
+                                    <option value="Shortest">Shortest</option>
+                                    <option value="Longest">Longest</option>
+                                </select>
+                                <div class="w-100">
+                                    <canvas id="read_length_reference_per_reference_canvas"></canvas>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="read-quality-plots-tab-content" role="tabpanel" aria-labelledby="read-quality-plots-tab">

@@ -14,7 +14,8 @@ use crate::statistics::presentation::cigar_operations::CigarOperations;
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SplitReadPerReferencePresentationData {
 	quality_map: PresentationFrequencyMap<u8>,
-	read_length_map: PresentationFrequencyMap<u32>,
+	read_length_on_reference_map: PresentationFrequencyMap<u32>,
+	read_length_sequence_map: PresentationFrequencyMap<u32>,
 	binned_statistics: BinnedStatisticsPresentationMap,
 	assembler_length_map: PresentationFrequencyMap<u32>,
 	gap_length_map: PresentationFrequencyMap<i64>,
@@ -31,8 +32,12 @@ impl SplitReadPerReferencePresentationData {
 		get_quality_frequency_map(&self.quality_map)
 	}
 
-	pub fn get_read_length_map(&self) -> &PresentationFrequencyMap<u32> {
-		&self.read_length_map
+	pub fn get_read_length_on_reference_map(&self) -> &PresentationFrequencyMap<u32> {
+		&self.read_length_on_reference_map
+	}
+
+	pub fn get_read_length_sequence_map(&self) -> &PresentationFrequencyMap<u32> {
+		&self.read_length_sequence_map
 	}
 
 	pub fn get_binned_statistics(&self) -> &BinnedStatisticsPresentationMap {
@@ -79,7 +84,8 @@ impl SplitReadPerReferencePresentationData {
 
 		pb.set_position(2);
 
-		let read_length_map = value.read_length_map.into();
+		let read_length_on_reference_map = value.read_length_on_reference_map.into();
+		let read_length_sequence_map = value.read_length_sequence_map.into();
 
 		pb.set_position(3);
 
@@ -175,7 +181,8 @@ impl SplitReadPerReferencePresentationData {
 
 		Self {
 			quality_map,
-			read_length_map,
+			read_length_on_reference_map,
+			read_length_sequence_map,
 			binned_statistics,
 			assembler_length_map,
 			gap_length_map,

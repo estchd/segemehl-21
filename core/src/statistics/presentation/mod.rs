@@ -33,12 +33,21 @@ impl PresentationData {
             )
     }
 
-    pub fn get_complete_read_length_map(&self) -> PresentationFrequencyMap<u32> {
+    pub fn get_read_length_on_reference_map(&self) -> PresentationFrequencyMap<u32> {
         self.per_reference.iter()
-            .map(|item| item.get_read_length_map())
+            .map(|item| item.get_read_length_on_reference_map())
             .fold(PresentationFrequencyMap::<u32>::new(),
                 |a, b|
                     PresentationFrequencyMap::<u32>::merge(&a, &b)
+            )
+    }
+
+    pub fn get_read_length_sequence_map(&self) -> PresentationFrequencyMap<u32> {
+        self.per_reference.iter()
+            .map(|item| item.get_read_length_sequence_map())
+            .fold(PresentationFrequencyMap::<u32>::new(),
+                  |a, b|
+                      PresentationFrequencyMap::<u32>::merge(&a, &b)
             )
     }
 
@@ -77,7 +86,7 @@ impl PresentationData {
     pub fn get_least_read_count(&self) -> u64 {
         self.per_reference.iter()
             .map(|item| item.get_single_read_data())
-            .map(|item| item.get_read_length_map())
+            .map(|item| item.get_read_length_on_reference_map())
             .map(|item| item.get_frequency_sum())
             .min()
             .unwrap_or(0)
@@ -86,7 +95,7 @@ impl PresentationData {
     pub fn get_most_read_count(&self) -> u64 {
         self.per_reference.iter()
             .map(|item| item.get_single_read_data())
-            .map(|item| item.get_read_length_map())
+            .map(|item| item.get_read_length_on_reference_map())
             .map(|item| item.get_frequency_sum())
             .max()
             .unwrap_or(0)
@@ -97,7 +106,7 @@ impl PresentationData {
 
         let iter = self.per_reference.iter()
             .map(|item| item.get_single_read_data())
-            .map(|item| item.get_read_length_map())
+            .map(|item| item.get_read_length_on_reference_map())
             .map(|item| item.get_frequency_sum());
 
         for item in iter {
@@ -112,7 +121,7 @@ impl PresentationData {
 
         let iter = self.per_reference.iter()
             .map(|item| item.get_single_read_data())
-            .map(|item| item.get_read_length_map())
+            .map(|item| item.get_read_length_on_reference_map())
             .map(|item| item.get_frequency_sum());
 
         for item in iter {
@@ -127,7 +136,7 @@ impl PresentationData {
 
         let iter = self.per_reference.iter()
             .map(|item| item.get_single_read_data())
-            .map(|item| item.get_read_length_map())
+            .map(|item| item.get_read_length_on_reference_map())
             .map(|item| item.get_frequency_sum());
 
         for item in iter {
