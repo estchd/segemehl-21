@@ -1,5 +1,3 @@
-#![feature(linked_list_cursors)]
-
 pub mod util;
 pub mod header;
 pub mod statistics;

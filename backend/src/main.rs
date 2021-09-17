@@ -1,5 +1,3 @@
-#![feature(linked_list_cursors)]
-
 use std::{
     convert::TryFrom,
     fs::File,
