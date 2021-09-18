@@ -46,6 +46,7 @@ impl CommandLineParameters {
                     .help("How many records the bam file is expected to contain")
                     .takes_value(true)
                     .required(false)
+                    .validator(number_validator)
             )
             .arg(
                 Arg::with_name("info_dump")
@@ -61,13 +62,8 @@ impl CommandLineParameters {
         let bai_path = matches.value_of("bai_path").map(|item| String::from(item));
         let output_path = matches.value_of("output_path").map(|item| String::from(item))
             .unwrap_or("statistics.json".to_string());
-
-        let expected_record_count = match matches.value_of("expected_record_count") {
-            None => None,
-            Some(expected) => {
-                Some(expected.parse::<usize>().expect("record_count is not a number"))
-            }
-        };
+        let expected_record_count = matches.value_of("expected_record_count")
+            .map(|item| item.parse::<usize>().unwrap());
 
         let info_dump = matches.is_present("info_dump");
 
@@ -79,4 +75,10 @@ impl CommandLineParameters {
             info_dump
         }
     }
+}
+
+fn number_validator(value: String) -> Result<(),String> {
+    value.parse::<usize>()
+        .map(|_| ())
+        .map_err(|err| format!("{}", err))
 }
