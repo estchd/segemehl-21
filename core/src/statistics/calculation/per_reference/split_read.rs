@@ -2,7 +2,7 @@ use bam::Record;
 use crate::statistics::calculation::assembler::map::CalculationAssemblerMap;
 use crate::statistics::calculation::binned::map::BinnedStatisticsCalculationMap;
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
-use crate::header::reference_sequence_line::reference_sequence::ReferenceSequence;
+use crate::header::reference_sequence_line::ReferenceSequence;
 use crate::statistics::calculation::binned::BinConfig;
 use crate::util::{get_record_mapping_quality, get_record_length_on_reference, get_record_length_sequence};
 

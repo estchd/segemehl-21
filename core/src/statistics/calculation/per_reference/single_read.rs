@@ -1,6 +1,6 @@
 use bam::Record;
 
-use crate::header::reference_sequence_line::reference_sequence::ReferenceSequence;
+use crate::header::reference_sequence_line::ReferenceSequence;
 use crate::statistics::calculation::binned::BinConfig;
 use crate::statistics::calculation::binned::map::BinnedStatisticsCalculationMap;
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;

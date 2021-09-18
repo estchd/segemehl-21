@@ -2,7 +2,7 @@ use bam::Record;
 
 use per_reference::PerReferenceCalculationData;
 
-use crate::header::header::Header;
+use crate::header::Header;
 use binned::BinConfig;
 use crate::statistics::calculation::unmapped::UnmappedCalculationData;
 

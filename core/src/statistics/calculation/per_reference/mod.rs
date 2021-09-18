@@ -2,7 +2,7 @@ pub mod single_read;
 pub mod split_read;
 
 use crate::statistics::calculation::per_reference::single_read::SingleReadPerReferenceCalculationData;
-use crate::header::reference_sequence_line::reference_sequence::ReferenceSequence;
+use crate::header::reference_sequence_line::ReferenceSequence;
 use bam::Record;
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use crate::util::{get_record_length_on_reference};

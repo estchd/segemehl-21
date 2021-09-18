@@ -1,34 +1,35 @@
 use std::{
     convert::TryFrom,
     fs::File,
-    num::{NonZeroU32}
+    num::NonZeroU32
 };
-use std::io::Write;
-
-use bam::{BamReader};
-use rayon::iter::{IntoParallelIterator, ParallelIterator};
-pub use segemehl_21_core::{
-    header::header::Header,
-};
-use crate::command_line::CommandLineParameters;
-use crate::reader::get_parallel_reader;
-use segemehl_21_core::{
-	statistics::calculation::CalculationData,
-	statistics::calculation::binned::BinConfig,
-	util::get_record_length_on_reference,
-	statistics::presentation::PresentationData
-};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::convert::TryInto;
+use std::io::Write;
+use std::sync::atomic::{AtomicUsize, Ordering};
+
+use bam::BamReader;
 use console::style;
 use indicatif::{ProgressBar, ProgressStyle};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
+use anyhow::{Context};
+
+use segemehl_21_core::{
+    statistics::calculation::binned::BinConfig,
+    statistics::calculation::CalculationData,
+    statistics::presentation::PresentationData,
+    util::get_record_length_on_reference
+};
+pub use segemehl_21_core::header::Header;
+
+use crate::command_line::CommandLineParameters;
+use crate::reader::{get_parallel_reader};
 
 mod old_formatting;
 mod util;
 mod command_line;
 mod reader;
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let params = CommandLineParameters::read();
 
     let bam_path = params.bam_path.as_str();
@@ -51,11 +52,14 @@ fn main() {
         )
     }
 
-    let reader = get_parallel_reader(bam_path, bai_path).unwrap();
+    let reader = get_parallel_reader(bam_path, bai_path)
+        .context("could not create record readers")?;
 
-    let header_reader = BamReader::from_path(bam_path,0u16).unwrap();
+    let header_reader = BamReader::from_path(bam_path,0u16)
+        .with_context(|| format!("could not create bam header reader at: {}", bam_path))?;
 
-    let header = Header::try_from(header_reader.header()).unwrap();
+    let header = Header::try_from(header_reader.header())
+        .context("could not read bam header")?;
 
     println!(
         "{} Reading Records...",
@@ -180,6 +184,8 @@ fn main() {
     pb.finish_and_clear();
 
     println!("Finished");
+
+    Ok(())
 }
 
 #[cfg(test)]
