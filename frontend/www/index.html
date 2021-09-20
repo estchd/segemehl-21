@@ -145,8 +145,11 @@
                     </div>
                     <div class="tab-pane fade" id="plots-tab-content" role="tabpanel" aria-labelledby="plots-tab">
                         <ul class="nav nav-tabs" id="plot-tabs" role="tablist">
-                            <li class="nav-item" role="presentation">
-                                <button class="nav-link active" id="single-read-plots-tab" data-bs-toggle="tab" data-bs-target="#single-read-plots-tab-content" type="button" role="tab" aria-controls="single-read-plots-tab" aria-selected="true">Single Read Plots</button>
+                            <li>
+                                <button class="nav-link active" id="reference-plots-tab" data-bs-toggle="tab" data-bs-target="#reference-plots-tab-content" type="button" role="tab" aria-controls="reference-plots-tab" aria-selected="true">Reference Plots</button>
+                            </li>
+                            <li>
+                                <button class="nav-link" id="unmapped-plots-tab" data-bs-toggle="tab" data-bs-target="#unmapped-plots-tab-content" type="button" role="tab" aria-controls="unmapped-plots-tab" aria-selected="true">Unmapped Plots</button>
                             </li>
                             <li>
                                 <button class="nav-link" id="split-read-plots-tab" data-bs-toggle="tab" data-bs-target="#split-read-plots-tab-content" type="button" role="tab" aria-controls="split-read-plots-tab" aria-selected="false">Split Read Plots</button>
@@ -165,56 +168,78 @@
                             </li>
                         </ul>
                         <div class="tab-content" id="plot-tabs-content">
-                            <div class="tab-pane fade show active" id="single-read-plots-tab-content" role="tabpanel" aria-labelledby="single-read-plots-tab">
-                                <div style="display: block; width: 100%">
-                                    <div style="display: inline; margin-left: 100px">
-                                        <h4 style="width: 600px">Test Plot</h4>
-                                        <p>Logarithmic Scale: <input id="test_logarithmic_toggle" type="checkbox"/></p>
-                                        <p>Logarithm Base: <input id="test_logarithmic_base" type="number" step="0.01" value="2" min="1.001"/></p>
-                                        <div style="width: 1200px">
-                                            <canvas id="chartjs_test_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div class="w-100">
-                                        <h4 style="width: 600px">Length of Chromosomes</h4>
-                                        <p>Logarithmic Scale: <input id="length_of_chromosomes_logarithmic" type="checkbox"/></p>
-                                        <div class="w-100">
-                                            <canvas id="chromosome_length_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div style="display: inline">
-                                        <h4 style="width: 600px">Number of Reads per Chromosome</h4>
-                                        <p>Logarithmic Scale: <input id="number_reads_logarithmic" type="checkbox"/></p>
-                                        <div class="w-100">
-                                            <canvas id="number_reads_canvas"></canvas>
-                                        </div>
-                                    </div>
-                                    <div style="display: inline">
-                                        <h4 style="width: 600px">Length of a Read per Chromosome</h4>
-                                        <label for="length_reads_stat">Calculated Stat: </label>
-                                        <select id="length_reads_stat">
-                                            <option value="Mean">Mean</option>
-                                            <option value="Mode">Mode</option>
-                                            <option value="Median">Median</option>
-                                            <option value="Shortest">Shortest</option>
-                                            <option value="Longest">Longest</option>
-                                        </select>
-                                        <p>Logarithmic Scale: <input id="length_reads_logarithmic" type="checkbox"/></p>
-                                        <div class="w-100">
-                                            <canvas id="length_reads_canvas"></canvas>
-                                        </div>
-                                    </div>
+                            <div class="tab-pane fade show active" id="reference-plots-tab-content" role="tabpanel" aria-labelledby="reference-plots-tab">
+                                <h4 style="width: 600px">Reference Length</h4>
+                                <p>Logarithmic Scale: <input id="reference_length_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="reference_length_canvas"></canvas>
+                                </div>
+                            </div>
+                            <div class="tab-pane fade" id="unmapped-plots-tab-content" role="tabpanel" aria-labelledby="unmapped-plots-tab">
+                                <h4 style="width: 600px">Unmapped Read Count</h4>
+                                <p>Logarithmic Scale: <input id="unmapped_read_count_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="unmapped_read_count_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Unmapped Read Percentage</h4>
+                                <div clas="w-100">
+                                    <canvas id="unmapped_read_percentage_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Unmapped Read Length</h4>
+                                <div clas="w-100">
+                                    <canvas id="unmapped_read_length_canvas"></canvas>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="split-read-plots-tab-content" role="tabpanel" aria-labelledby="split-read-plots-tab">
-                                <h4 style="width: 600px">Gap Lengths for File</h4>
+                                <h4 style="width: 600px">Gap Lengths per File</h4>
                                 <div class="w-100">
-                                    <canvas id="file_gap_lengths_canvas"></canvas>
+                                    <canvas id="gap_lengths_file_canvas"></canvas>
                                 </div>
-                                <h4 style="width: 600px">Split Counts for File</h4>
-                                <p>Logarithmic Scale: <input id="file_split_counts_logarithmic" type="checkbox"/></p>
+                                <h4 style="width: 600px">Gap Lengths per Reference</h4>
+                                <label for="gap_lengths_per_reference_stat">Calculated Stat: </label>
+                                <select id="gap_lengths_per_reference_stat">
+                                    <option value="Mean">Mean</option>
+                                    <option value="Mode">Mode</option>
+                                    <option value="Median">Median</option>
+                                    <option value="Shortest">Shortest</option>
+                                    <option value="Longest">Longest</option>
+                                </select>
                                 <div class="w-100">
-                                    <canvas id="file_split_counts_canvas"></canvas>
+                                    <canvas id="gap_lengths_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Complete Lengths per File</h4>
+                                <div class="w-100">
+                                    <canvas id="complete_lengths_file_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Complete Lengths per Reference</h4>
+                                <label for="complete_lengths_per_reference_stat">Calculated Stat: </label>
+                                <select id="complete_lengths_per_reference_stat">
+                                    <option value="Mean">Mean</option>
+                                    <option value="Mode">Mode</option>
+                                    <option value="Median">Median</option>
+                                    <option value="Shortest">Shortest</option>
+                                    <option value="Longest">Longest</option>
+                                </select>
+                                <div class="w-100">
+                                    <canvas id="complete_lengths_per_reference_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Split Counts per File</h4>
+                                <p>Logarithmic Scale: <input id="split_counts_file_logarithmic" type="checkbox"/></p>
+                                <div class="w-100">
+                                    <canvas id="split_counts_file_canvas"></canvas>
+                                </div>
+                                <h4 style="width: 600px">Split Counts per Reference</h4>
+                                <p>Logarithmic Scale: <input id="split_counts_per_reference_logarithmic" type="checkbox"/></p>
+                                <label for="split_counts_per_reference_stat">Calculated Stat: </label>
+                                <select id="split_counts_per_reference_stat">
+                                    <option value="Mean">Mean</option>
+                                    <option value="Mode">Mode</option>
+                                    <option value="Median">Median</option>
+                                    <option value="Shortest">Least</option>
+                                    <option value="Longest">Most</option>
+                                </select>
+                                <div class="w-100">
+                                    <canvas id="split_counts_per_reference_canvas"></canvas>
                                 </div>
                             </div>
                             <div class="tab-pane fade" id="read-length-plots-tab-content" role="tabpanel" aria-labelledby="read-length-plots-tab">

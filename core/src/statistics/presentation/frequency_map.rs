@@ -5,6 +5,7 @@ use serde_derive::{Deserialize, Serialize};
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use std::collections::hash_map::IntoIter;
 use std::iter::Sum;
+use num_traits::ToPrimitive;
 
 #[derive(Serialize, Deserialize, Clone, Debug)]
 pub struct PresentationFrequencyMap<T>
@@ -74,31 +75,31 @@ impl<T: Eq + Hash + Copy + Into<u64>> PresentationFrequencyMap<T> {
 	}
 }
 
-impl<T: Eq + Hash + Copy + Ord + Into<u64>> PresentationFrequencyMap<T> {
+impl<T: Eq + Hash + Copy + Ord + ToPrimitive> PresentationFrequencyMap<T> {
 	pub fn get_median_entry(&self) -> Option<f64> {
 		let min = self.get_min_entry();
 		let max = self.get_max_entry();
 
 		let min_max = min.zip(max)?;
 
-		let min = min_max.0.0.into();
-		let max = min_max.1.0.into();
+		let min = min_max.0.0.to_f64()?;
+		let max = min_max.1.0.to_f64()?;
 
-		let median = (min + max) as f64 / 2.0;
+		let median = (min + max) / 2.0;
 		Some(median)
 	}
 }
 
-impl<T: Eq + Hash + Copy + Into<u64> + Sum> PresentationFrequencyMap<T> {
-	pub fn get_mean_entry(&self) -> f64 {
+impl<T: Eq + Hash + Copy + ToPrimitive + Sum> PresentationFrequencyMap<T> {
+	pub fn get_mean_entry(&self) -> Option<f64> {
 		let sum: T = self.map.keys()
 			.map(|item| *item)
 			.sum();
 
-		let sum: u64 = sum.into();
+		let sum: f64 = sum.to_f64()?;
 		let count = self.map.len();
 
-		sum as f64 / count as f64
+		Some(sum / count as f64)
 	}
 }
 

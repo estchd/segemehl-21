@@ -51,6 +51,42 @@ impl PresentationData {
             )
     }
 
+    pub fn get_assembler_length_map(&self) -> PresentationFrequencyMap<u32> {
+        self.per_reference.iter()
+            .map(|item| item.get_split_read_data().get_assembler_length_map())
+            .fold(PresentationFrequencyMap::new(),
+                  |a, b|
+                    PresentationFrequencyMap::merge(&a,&b)
+            )
+    }
+
+    pub fn get_gap_length_map(&self) -> PresentationFrequencyMap<i64> {
+        self.per_reference.iter()
+            .map(|item| item.get_split_read_data().get_gap_length_map())
+            .fold(PresentationFrequencyMap::new(),
+                  |a,b|
+                      PresentationFrequencyMap::merge(&a,&b)
+            )
+    }
+
+    pub fn get_split_count_map(&self) -> PresentationFrequencyMap<usize> {
+        self.per_reference.iter()
+            .map(|item| item.get_split_read_data().get_split_count_map())
+            .fold(PresentationFrequencyMap::new(),
+                  |a,b|
+                PresentationFrequencyMap::merge(&a,&b)
+            )
+    }
+
+    pub fn get_split_count_unmapped_map(&self) -> PresentationFrequencyMap<usize> {
+        self.per_reference.iter()
+            .map(|item| item.get_split_read_data().get_split_count_unmapped_map())
+            .fold(PresentationFrequencyMap::new(),
+                  |a,b|
+                      PresentationFrequencyMap::merge(&a,&b)
+            )
+    }
+
     pub fn get_complete_quality_frequency_map(&self) -> Vec<(u8,u64)> {
         get_quality_frequency_map(&self.get_complete_quality_frequency())
     }
@@ -73,7 +109,7 @@ impl PresentationData {
         return None;
     }
 
-    pub fn get_unmapped_single_data(&self) -> &UnmappedPresentationData {
+    pub fn get_unmapped_data(&self) -> &UnmappedPresentationData {
         &self.unmapped
     }
 
@@ -113,7 +149,7 @@ impl PresentationData {
             read_count_map.add_entry(item);
         }
 
-        read_count_map.get_mean_entry()
+        read_count_map.get_mean_entry().unwrap()
     }
 
     pub fn get_median_read_count(&self) -> f64 {

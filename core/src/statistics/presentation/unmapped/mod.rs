@@ -6,6 +6,7 @@ use crate::statistics::presentation::unmapped::split_read::UnmappedSplitReadPres
 use std::convert::{TryFrom, TryInto};
 use crate::statistics::calculation::unmapped::UnmappedCalculationData;
 use indicatif::{ProgressBar, ProgressStyle};
+use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 
 pub mod single_read;
 pub mod split_read;
@@ -17,6 +18,13 @@ pub struct UnmappedPresentationData {
 }
 
 impl UnmappedPresentationData {
+    pub fn get_read_length_map(&self) -> PresentationFrequencyMap<u32> {
+        PresentationFrequencyMap::merge(
+            self.single_read.get_read_length_map(),
+            self.split_read.get_read_length_map()
+        )
+    }
+
     pub fn get_single_read(&self) -> &UnmappedSingleReadPresentationData {
         &self.single_read
     }

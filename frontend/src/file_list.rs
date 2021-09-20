@@ -258,7 +258,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 	let mean_length_of_read_per_chromosome_data: Vec<f64> = data.get_per_reference_data()
 	                                                            .map(|item| item.get_single_read_data())
 	                                                            .map(|item| item.get_read_length_on_reference_map())
-	                                                            .map(|item| item.get_mean_entry()).collect();
+	                                                            .map(|item| item.get_mean_entry().unwrap()).collect();
 	let median_length_of_read_per_chromosome_data: Vec<f64> = data.get_per_reference_data()
 	                                                              .map(|item| item.get_single_read_data())
 	                                                              .map(|item| item.get_read_length_on_reference_map())
@@ -325,11 +325,262 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 
 
 	////////////////////////////////////////////////////////////////////////////
+	// --------------------------- Split Read ------------------------------- //
+	////////////////////////////////////////////////////////////////////////////
+
+	let gap_lengths_file_mean: f64 = data
+		.get_gap_length_map()
+		.get_mean_entry().unwrap();
+	let gap_lengths_file_mode: f64 = data
+		.get_gap_length_map()
+		.get_max_frequency().unwrap_or((0,0)).0 as f64;
+	let gap_lengths_file_median: f64 = data
+		.get_gap_length_map()
+		.get_median_entry().unwrap_or(0.0);
+	let gap_lengths_file_shortest: f64 = data
+		.get_gap_length_map()
+		.get_min_entry()
+		.unwrap_or((0,0)).0 as f64;
+	let gap_lengths_file_longest: f64 = data
+		.get_gap_length_map()
+		.get_max_entry()
+		.unwrap_or((0,0)).0 as f64;
+
+	let complete_lengths_file_mean: f64 = data
+		.get_assembler_length_map()
+		.get_mean_entry().unwrap();
+	let complete_lengths_file_mode: f64 = data
+		.get_assembler_length_map()
+		.get_max_frequency().unwrap_or((0,0)).0 as f64;
+	let complete_lengths_file_median: f64 = data
+		.get_assembler_length_map()
+		.get_median_entry().unwrap_or(0.0);
+	let complete_lengths_file_shortest: f64 = data
+		.get_assembler_length_map()
+		.get_min_entry()
+		.unwrap_or((0,0)).0 as f64;
+	let complete_lengths_file_longest: f64 = data
+		.get_assembler_length_map()
+		.get_max_entry()
+		.unwrap_or((0,0)).0 as f64;
+
+	let split_counts_file_mean: f64 = data
+		.get_split_count_map()
+		.get_mean_entry().unwrap();
+	let split_counts_file_mode: f64 = data
+		.get_split_count_map()
+		.get_max_frequency().unwrap_or((0,0)).0 as f64;
+	let split_counts_file_median: f64 = data
+		.get_split_count_map()
+		.get_median_entry().unwrap_or(0.0);
+	let split_counts_file_shortest: f64 = data
+		.get_split_count_map()
+		.get_min_entry()
+		.unwrap_or((0,0)).0 as f64;
+	let split_counts_file_longest: f64 = data
+		.get_split_count_map()
+		.get_max_entry()
+		.unwrap_or((0,0)).0 as f64;
+
+	let gap_lengths_per_reference_mean: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_gap_length_map())
+		.map(|item| item.get_mean_entry().unwrap())
+		.map(|item| item as f64)
+		.collect();
+	let gap_lengths_per_reference_mode: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_gap_length_map())
+		.map(|item| item.get_max_frequency().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+	let gap_lengths_per_reference_median: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_gap_length_map())
+		.map(|item| item.get_median_entry().unwrap_or(0.0))
+		.map(|item| item as f64)
+		.collect();
+	let gap_lengths_per_reference_shortest: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_gap_length_map())
+		.map(|item| item.get_min_entry().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+	let gap_lengths_per_reference_longest: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_gap_length_map())
+		.map(|item| item.get_max_entry().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+
+	let complete_lengths_per_reference_mean: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_assembler_length_map())
+		.map(|item| item.get_mean_entry().unwrap())
+		.map(|item| item as f64)
+		.collect();
+	let complete_lengths_per_reference_mode: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_assembler_length_map())
+		.map(|item| item.get_max_frequency().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+	let complete_lengths_per_reference_median: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_assembler_length_map())
+		.map(|item| item.get_median_entry().unwrap_or(0.0))
+		.map(|item| item as f64)
+		.collect();
+	let complete_lengths_per_reference_shortest: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_assembler_length_map())
+		.map(|item| item.get_min_entry().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+	let complete_lengths_per_reference_longest: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_assembler_length_map())
+		.map(|item| item.get_max_entry().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+
+	let split_counts_per_reference_mean: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_split_count_map())
+		.map(|item| item.get_mean_entry().unwrap())
+		.map(|item| item as f64)
+		.collect();
+	let split_counts_per_reference_mode: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_split_count_map())
+		.map(|item| item.get_max_frequency().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+	let split_counts_per_reference_median: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_split_count_map())
+		.map(|item| item.get_median_entry().unwrap_or(0.0))
+		.map(|item| item as f64)
+		.collect();
+	let split_counts_per_reference_least: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_split_count_map())
+		.map(|item| item.get_min_entry().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+	let split_counts_per_reference_most: Vec<f64> = data
+		.get_per_reference_data()
+		.map(|item| item.get_split_read_data().get_split_count_map())
+		.map(|item| item.get_max_entry().unwrap_or((0,0)))
+		.map(|item| item.0 as f64)
+		.collect();
+
+	repository.insert("gap_lengths_file".to_string(), vec![
+		gap_lengths_file_mean,
+		gap_lengths_file_mode,
+		gap_lengths_file_median,
+		gap_lengths_file_shortest,
+		gap_lengths_file_longest
+	]);
+	repository.insert("complete_lengths_file".to_string(), vec![
+		complete_lengths_file_mean,
+		complete_lengths_file_mode,
+		complete_lengths_file_median,
+		complete_lengths_file_shortest,
+		complete_lengths_file_longest
+	]);
+	repository.insert("split_counts_file".to_string(), vec![
+		split_counts_file_mean,
+		split_counts_file_mode,
+		split_counts_file_median,
+		split_counts_file_shortest,
+		split_counts_file_longest
+	]);
+	repository.insert("gap_lengths_per_reference_Mean".to_string(), gap_lengths_per_reference_mean);
+	repository.insert("gap_lengths_per_reference_Mode".to_string(), gap_lengths_per_reference_mode);
+	repository.insert("gap_lengths_per_reference_Median".to_string(), gap_lengths_per_reference_median);
+	repository.insert("gap_lengths_per_reference_Shortest".to_string(), gap_lengths_per_reference_shortest);
+	repository.insert("gap_lengths_per_reference_Longest".to_string(), gap_lengths_per_reference_longest);
+
+	repository.insert("complete_lengths_per_reference_Mean".to_string(), complete_lengths_per_reference_mean);
+	repository.insert("complete_lengths_per_reference_Mode".to_string(), complete_lengths_per_reference_mode);
+	repository.insert("complete_lengths_per_reference_Median".to_string(), complete_lengths_per_reference_median);
+	repository.insert("complete_lengths_per_reference_Shortest".to_string(), complete_lengths_per_reference_shortest);
+	repository.insert("complete_lengths_per_reference_Longest".to_string(), complete_lengths_per_reference_longest);
+
+	repository.insert("split_counts_per_reference_Mean".to_string(), split_counts_per_reference_mean);
+	repository.insert("split_counts_per_reference_Mode".to_string(), split_counts_per_reference_mode);
+	repository.insert("split_counts_per_reference_Median".to_string(), split_counts_per_reference_median);
+	repository.insert("split_counts_per_reference_Least".to_string(), split_counts_per_reference_least);
+	repository.insert("split_counts_per_reference_Most".to_string(), split_counts_per_reference_most);
+
+	////////////////////////////////////////////////////////////////////////////
+	// ---------------------------- Reference ------------------------------- //
+	////////////////////////////////////////////////////////////////////////////
+
+	let reference_length: Vec<f64> = data.get_per_reference_data()
+		.map(|item| item.get_reference_length() as f64)
+		.collect();
+
+	repository.insert("reference_length".to_string(), reference_length);
+
+	////////////////////////////////////////////////////////////////////////////
+	// ----------------------------- Unmapped ------------------------------- //
+	////////////////////////////////////////////////////////////////////////////
+
+	let unmapped_read_count: u64 = data.get_unmapped_data()
+		.get_read_length_map()
+		.get_frequency_sum();
+
+	let mapped_read_count: u64 = data.get_per_reference_data()
+		.map(|item| item.get_read_length_sequence_map().get_frequency_sum())
+		.sum();
+
+	let total_read_count = unmapped_read_count + mapped_read_count;
+
+	let unmapped_read_percentage = (total_read_count as f64 / unmapped_read_count as f64) * 100.0;
+
+	let mean_unmapped_read_length = data
+		.get_unmapped_data()
+		.get_read_length_map()
+		.get_mean_entry().unwrap();
+	let mode_unmapped_read_length = data
+		.get_unmapped_data()
+		.get_read_length_map()
+		.get_max_frequency()
+		.unwrap_or((0,0)).0 as f64;
+	let median_unmapped_read_length = data
+		.get_unmapped_data()
+		.get_read_length_map()
+		.get_median_entry()
+		.unwrap_or(0.0);
+	let shortest_unmapped_read_length = data
+		.get_unmapped_data()
+		.get_read_length_map()
+		.get_min_entry()
+		.unwrap_or((0,0)).0 as f64;
+	let longest_unmapped_read_length = data
+		.get_unmapped_data()
+		.get_read_length_map()
+		.get_max_entry()
+		.unwrap_or((0,0)).0 as f64;
+
+	repository.insert("unmapped_read_count".to_string(), vec![unmapped_read_count as f64]);
+	repository.insert("unmapped_read_percentage".to_string(), vec![unmapped_read_percentage]);
+	repository.insert("unmapped_read_length".to_string(), vec![
+		mean_unmapped_read_length,
+		mode_unmapped_read_length,
+		median_unmapped_read_length,
+		shortest_unmapped_read_length,
+		longest_unmapped_read_length
+	]);
+
+	////////////////////////////////////////////////////////////////////////////
 	// ---------------------------- Read  Length ---------------------------- //
 	////////////////////////////////////////////////////////////////////////////
 
 	let mean_read_length_sequence_file = data.get_read_length_sequence_map()
-	                                          .get_mean_entry();
+	                                          .get_mean_entry().unwrap();
 	let mode_read_length_sequence_file = data.get_read_length_sequence_map()
 	                                          .get_max_frequency().unwrap_or((0,0)).0 as f64;
 	let median_read_length_sequence_file = data.get_read_length_sequence_map()
@@ -348,7 +599,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 	];
 
 	let mean_read_length_reference_file = data.get_read_length_on_reference_map()
-	                                          .get_mean_entry();
+	                                          .get_mean_entry().unwrap();
 	let mode_read_length_reference_file = data.get_read_length_on_reference_map()
 	                                          .get_max_frequency().unwrap_or((0,0)).0 as f64;
 	let median_read_length_reference_file = data.get_read_length_on_reference_map()
@@ -367,7 +618,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 	];
 
 	let read_length_sequence_per_reference_mean_data: Vec<f64> = data.get_per_reference_data()
-	                                                                  .map(|item| item.get_read_length_sequence_map().get_mean_entry())
+	                                                                  .map(|item| item.get_read_length_sequence_map().get_mean_entry().unwrap())
 	                                                                  .collect();
 	let read_length_sequence_per_reference_mode_data: Vec<f64> = data.get_per_reference_data()
 	                                                                  .map(|item| item.get_read_length_sequence_map().get_max_frequency())
@@ -387,7 +638,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 	                                                                     .collect();
 
 	let read_length_reference_per_reference_mean_data: Vec<f64> = data.get_per_reference_data()
-	                                                                  .map(|item| item.get_read_length_on_reference_map().get_mean_entry())
+	                                                                  .map(|item| item.get_read_length_on_reference_map().get_mean_entry().unwrap())
 	                                                                  .collect();
 	let read_length_reference_per_reference_mode_data: Vec<f64> = data.get_per_reference_data()
 	                                                                  .map(|item| item.get_read_length_on_reference_map().get_max_frequency())
@@ -633,7 +884,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 	repository.insert("read_quality_file".to_string(), file_quality_map);
 
 	let per_reference_read_quality_mean: Vec<f64> = data.get_per_reference_data()
-		.map(|item| item.get_quality_frequency().get_mean_entry())
+		.map(|item| item.get_quality_frequency().get_mean_entry().unwrap())
 		.collect();
 	let per_reference_read_quality_mode: Vec<f64> = data.get_per_reference_data()
 		.map(|item| item.get_quality_frequency().get_max_frequency())

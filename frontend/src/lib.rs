@@ -96,7 +96,7 @@ pub fn generate_per_file_stats(file_name: String) -> Option<PerFileStatistics> {
         biggest_number_of_reads_for_single_chromosome: statistics.get_most_read_count(),
         median_length_of_read_in_file:complete_read_length_map.get_median_entry().unwrap_or(0.0),
         mode_length_of_read_in_file: complete_read_length_map.get_max_frequency().unwrap_or((0,0)).0,
-        mean_length_of_read_in_file: complete_read_length_map.get_mean_entry(),
+        mean_length_of_read_in_file: complete_read_length_map.get_mean_entry().unwrap(),
         median_number_of_reads_per_chromosome: statistics.get_median_read_count(),
         mode_number_of_reads_per_chromosome: statistics.get_mode_read_count(),
         mean_number_of_reads_per_chromosome: statistics.get_mean_read_count(),
