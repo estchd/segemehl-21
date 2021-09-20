@@ -87,19 +87,19 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-
+    //TODO Make this a console parameter
     let bin_config = BinConfig::NumberOfBins(NonZeroU32::new(1000).unwrap());
 
+    //TODO Error handling here
     let calculation_data = CalculationData::new(&header, bin_config).unwrap();
 
     let total_record_stats: (AtomicUsize, AtomicUsize) = (AtomicUsize::new(0), AtomicUsize::new(0));
-
-
 
     reader.into_par_iter().filter_map(|item| item.ok()).for_each(|record| {
         let total_records = total_record_stats.0.fetch_add(1, Ordering::Relaxed);
         let _ = total_record_stats.1.fetch_add(get_record_length_on_reference(&record) as usize, Ordering::Relaxed);
 
+        //TODO Error handling here
         calculation_data.add_record(record).unwrap();
 
         if total_records % 10000 == 0 {
@@ -116,6 +116,7 @@ fn main() -> anyhow::Result<()> {
         style("[3/4]").bold().dim()
     );
 
+    //TODO Error handling here
     let presentation_data: PresentationData = calculation_data.try_into().unwrap();
 
     println!();
@@ -141,12 +142,10 @@ fn main() -> anyhow::Result<()> {
         }
     }
 
-
     println!(
         "{} Writing to File...",
         style("[4/4]").bold().dim()
     );
-
 
     let pb = ProgressBar::new(3);
     pb.set_style(ProgressStyle::default_bar()
@@ -157,27 +156,33 @@ fn main() -> anyhow::Result<()> {
 
     pb.set_message("Creating File...");
 
+    //TODO Error handling here
     let mut out_file = File::create(params.output_path).unwrap();
 
     pb.set_position(1);
     pb.set_message("Serializing Data...");
 
+    //TODO Make this a console parameter
     let json = true;
 
     if json {
+        //TODO Error handling here
         let serialized = serde_json::to_string(&presentation_data).unwrap();
 
         pb.set_position(2);
         pb.set_message("Writing JSON Data...");
 
+        //TODO Error handling here
         out_file.write(serialized.as_bytes()).unwrap();
     }
     else {
+        //TODO Error handling here
         let serialized = bincode::serialize(&presentation_data).unwrap();
 
         pb.set_position(2);
         pb.set_message("Writing Bytecode Data...");
 
+        //TODO Error handling here
         out_file.write_all(&serialized).unwrap();
     }
 
