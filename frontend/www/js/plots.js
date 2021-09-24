@@ -30,9 +30,11 @@ import {
     update_reference_dependent_split_read_plots,
     update_split_read_plots
 } from "./plots/split_read_plots";
+import {setup_test_plots, update_reference_dependent_test_plots, update_test_plot} from "./plots/test_plots";
 
 
 export function setup_plots() {
+    setup_test_plots();
     setup_split_read_plots();
     setup_reference_plots();
     setup_unmapped_plots();
@@ -47,6 +49,7 @@ export function setup_plots() {
 }
 
 export function update_all_plots() {
+    update_test_plot();
     update_split_read_plots();
     update_reference_plots();
     update_unmapped_plots();
@@ -59,6 +62,7 @@ export function update_all_plots() {
 }
 
 function update_reference_dependent_plots() {
+    update_reference_dependent_test_plots();
     update_reference_dependent_split_read_plots();
     update_reference_dependent_reference_plots();
     update_reference_dependent_unmapped_plots();
