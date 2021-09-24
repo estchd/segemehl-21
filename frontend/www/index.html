@@ -146,6 +146,9 @@
                     <div class="tab-pane fade" id="plots-tab-content" role="tabpanel" aria-labelledby="plots-tab">
                         <ul class="nav nav-tabs" id="plot-tabs" role="tablist">
                             <li>
+                                <button class="nav-link active" id="test-plots-tab" data-bs-toggle="tab" data-bs-target="#test-plots-tab-content" type="button" role="tab" aria-controls="test-plots-tab" aria-selected="true">Test Plots</button>
+                            </li>
+                            <li>
                                 <button class="nav-link active" id="reference-plots-tab" data-bs-toggle="tab" data-bs-target="#reference-plots-tab-content" type="button" role="tab" aria-controls="reference-plots-tab" aria-selected="true">Reference Plots</button>
                             </li>
                             <li>
@@ -168,6 +171,8 @@
                             </li>
                         </ul>
                         <div class="tab-content" id="plot-tabs-content">
+                            <div class="tab-pane fade show active" id="test-plots-tab-content" role="tabpanel" aria-labelledby="test-plots-tab">
+                            </div>
                             <div class="tab-pane fade show active" id="reference-plots-tab-content" role="tabpanel" aria-labelledby="reference-plots-tab">
                                 <h4 style="width: 600px">Reference Length</h4>
                                 <p>Logarithmic Scale: <input id="reference_length_logarithmic" type="checkbox"/></p>
