@@ -54,7 +54,7 @@ async function handle_file_input_change() {
         promises.push(promise);
     }
     promises.push(rebuild_file_list());
-    promises.push(update_all_plots());
+    update_all_plots();
 
     await Promise.all(promises);
 }
@@ -64,7 +64,7 @@ async function handle_process_file_completion() {
     let promises = [];
 
     promises.push(rebuild_file_list());
-    promises.push(update_all_plots());
+    update_all_plots();
 
     await Promise.all(promises);
 }
