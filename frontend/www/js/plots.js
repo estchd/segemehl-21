@@ -72,6 +72,8 @@ function update_reference_dependent_plots() {
     update_reference_dependent_read_length_plots();
 }
 
+const selected_chromosome = document.getElementById("chromosome-select");
+
 export function linking_update_selected_reference(index) {
     let reference_names = get_reference_list();
     if (reference_names[index]) {
@@ -83,5 +85,3 @@ export function linking_update_selected_reference(index) {
 
     update_reference_dependent_plots();
 }
-
-const selected_chromosome = document.getElementById("chromosome-select");
