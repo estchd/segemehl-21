@@ -45,7 +45,7 @@ export function setup_plots() {
 
     update_all_plots();
 
-    selected_chromosome.addEventListener("change", () => update_reference_dependent_plots());
+    selected_chromosome.addEventListener("change", update_reference_dependent_plots);
 }
 
 export function update_all_plots() {
