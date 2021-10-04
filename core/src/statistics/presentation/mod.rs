@@ -8,6 +8,8 @@ use crate::util::get_quality_frequency_map;
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use crate::statistics::presentation::cigar_operations::CigarOperations;
+use crate::statistics::presentation::meta::BinConfig::FixedCount;
+use crate::statistics::presentation::meta::Meta;
 
 pub mod frequency_map;
 pub mod binned;
@@ -16,11 +18,13 @@ pub mod unmapped;
 pub mod assembler;
 pub mod record;
 pub mod cigar_operations;
+pub mod meta;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PresentationData {
     per_reference: Vec<PerReferencePresentationData>,
-    unmapped: UnmappedPresentationData
+    unmapped: UnmappedPresentationData,
+    meta: Meta,
 }
 
 impl PresentationData {
@@ -226,7 +230,10 @@ impl TryFrom<CalculationData> for PresentationData {
 
         Ok(Self {
             per_reference,
-            unmapped
+            unmapped,
+            meta: Meta {
+                bin_config: FixedCount(1000),
+            }
         })
     }
 }
