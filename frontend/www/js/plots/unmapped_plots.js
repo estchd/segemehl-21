@@ -1,4 +1,5 @@
 import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
+import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
 
 export function setup_unmapped_plots() {
     setup_unmapped_read_count_plot();
@@ -202,12 +203,12 @@ let unmapped_read_length_plot;
 
 function setup_unmapped_read_length_plot() {
     let data = {
-        labels: ["Mean","Mode","Median","Shortest","Longest"],
+        labels: ["File"],
         datasets: []
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: data,
         options: {
             plugins: {
@@ -231,7 +232,12 @@ function setup_unmapped_read_length_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            tooltips: {
+                callbacks: {
+                    boxplotLabel: boxplot_tooltip
+                }
+            },
         }
     };
 
@@ -244,7 +250,7 @@ function setup_unmapped_read_length_plot() {
 function update_unmapped_read_length_plot() {
     if (unmapped_read_length_plot) {
         let plot_data = {
-            labels: ["Mean","Mode","Median","Shortest","Longest"],
+            labels: ["File"],
             datasets: []
         };
 
@@ -256,7 +262,15 @@ function update_unmapped_read_length_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const data = get_dataset(name,"unmapped_read_length");
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"unmapped_read_length_min"),
+                get_dataset(name,"unmapped_read_length_q1"),
+                get_dataset(name,"unmapped_read_length_median"),
+                get_dataset(name,"unmapped_read_length_mean"),
+                get_dataset(name,"unmapped_read_length_mode"),
+                get_dataset(name,"unmapped_read_length_q3"),
+                get_dataset(name,"unmapped_read_length_max"),
+            );
 
             let dataset = {
                 label: name,

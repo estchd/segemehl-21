@@ -1,5 +1,6 @@
 import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
+import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
 
 export function setup_split_read_plots() {
     setup_gap_lengths_file_plot();
@@ -31,12 +32,12 @@ let gap_lengths_file_plot;
 
 function setup_gap_lengths_file_plot() {
     let data = {
-        labels: ["Mean","Mode","Median","Shortest","Longest"],
+        labels: ["File"],
         datasets: []
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: data,
         options: {
             plugins: {
@@ -60,7 +61,12 @@ function setup_gap_lengths_file_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            tooltips: {
+                callbacks: {
+                    boxplotLabel: boxplot_tooltip
+                }
+            }
         }
     };
 
@@ -73,7 +79,7 @@ function setup_gap_lengths_file_plot() {
 function update_gap_lengths_file_plot() {
     if (gap_lengths_file_plot) {
         let plot_data = {
-            labels: ["Mean","Mode","Median","Shortest","Longest"],
+            labels: ["File"],
             datasets: []
         };
 
@@ -85,7 +91,15 @@ function update_gap_lengths_file_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const data = get_dataset(name,"gap_lengths_file");
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"gap_lengths_file_min"),
+                get_dataset(name,"gap_lengths_file_q1"),
+                get_dataset(name,"gap_lengths_file_median"),
+                get_dataset(name,"gap_lengths_file_mean"),
+                get_dataset(name,"gap_lengths_file_mode"),
+                get_dataset(name,"gap_lengths_file_q3"),
+                get_dataset(name,"gap_lengths_file_max"),
+            );
 
             let dataset = {
                 label: name,
@@ -102,7 +116,6 @@ function update_gap_lengths_file_plot() {
 }
 
 let gap_lengths_per_reference_plot;
-const gap_lengths_per_reference_stat = document.getElementById("gap_lengths_per_reference_stat");
 
 function setup_gap_lengths_per_reference_plot() {
     let data = {
@@ -111,7 +124,7 @@ function setup_gap_lengths_per_reference_plot() {
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: data,
         options: {
             plugins: {
@@ -125,10 +138,10 @@ function setup_gap_lengths_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    stacked: false,
                 },
                 y: {
-                    stacked: true
+                    stacked: false
                 }
             },
             interaction: {
@@ -136,6 +149,11 @@ function setup_gap_lengths_per_reference_plot() {
                 intersect: false
             },
             animation: false,
+            tooltips: {
+                callbacks: {
+                    boxplotLabel: boxplot_tooltip
+                }
+            },
             onClick: function (_, elements) {
                 let element = elements[0];
 
@@ -150,9 +168,6 @@ function setup_gap_lengths_per_reference_plot() {
         document.getElementById('gap_lengths_per_reference_canvas'),
         config
     );
-
-    gap_lengths_per_reference_stat.addEventListener("change", () => update_gap_lengths_per_reference_plot());
-
 }
 
 function update_gap_lengths_per_reference_plot() {
@@ -163,7 +178,6 @@ function update_gap_lengths_per_reference_plot() {
         };
 
         let file_names = get_file_list();
-        let stat_name = gap_lengths_per_reference_stat.value;
 
         for (const file_info of file_names) {
             if (!file_info[2]) {continue;}
@@ -171,7 +185,15 @@ function update_gap_lengths_per_reference_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const data = get_dataset(name,"gap_lengths_per_reference_" + stat_name);
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"gap_lengths_per_reference_min"),
+                get_dataset(name,"gap_lengths_per_reference_q1"),
+                get_dataset(name,"gap_lengths_per_reference_median"),
+                get_dataset(name,"gap_lengths_per_reference_mean"),
+                get_dataset(name,"gap_lengths_per_reference_mode"),
+                get_dataset(name,"gap_lengths_per_reference_q3"),
+                get_dataset(name,"gap_lengths_per_reference_max"),
+            );
 
             let dataset = {
                 label: name,
@@ -191,7 +213,7 @@ let complete_lengths_file_plot;
 
 function setup_complete_lengths_file_plot() {
     let data = {
-        labels: ["Mean","Mode","Median","Shortest","Longest"],
+        labels: ["File"],
         datasets: []
     };
 
@@ -220,7 +242,12 @@ function setup_complete_lengths_file_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            tooltips: {
+                callbacks: {
+                    boxplotLabel: boxplot_tooltip
+                }
+            },
         }
     };
 
@@ -233,7 +260,7 @@ function setup_complete_lengths_file_plot() {
 function update_complete_lengths_file_plot() {
     if (complete_lengths_file_plot) {
         let plot_data = {
-            labels: ["Mean","Mode","Median","Shortest","Longest"],
+            labels: ["File"],
             datasets: []
         };
 
@@ -245,7 +272,15 @@ function update_complete_lengths_file_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const data = get_dataset(name,"complete_lengths_file");
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"complete_lengths_file_min"),
+                get_dataset(name,"complete_lengths_file_q1"),
+                get_dataset(name,"complete_lengths_file_median"),
+                get_dataset(name,"complete_lengths_file_mean"),
+                get_dataset(name,"complete_lengths_file_mode"),
+                get_dataset(name,"complete_lengths_file_q3"),
+                get_dataset(name,"complete_lengths_file_max"),
+            );
 
             let dataset = {
                 label: name,
@@ -262,7 +297,6 @@ function update_complete_lengths_file_plot() {
 }
 
 let complete_lengths_per_reference_plot;
-const complete_lengths_per_reference_stat = document.getElementById("complete_lengths_per_reference_stat");
 
 function setup_complete_lengths_per_reference_plot() {
     let data = {
@@ -271,7 +305,7 @@ function setup_complete_lengths_per_reference_plot() {
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: data,
         options: {
             plugins: {
@@ -285,10 +319,10 @@ function setup_complete_lengths_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    stacked: false,
                 },
                 y: {
-                    stacked: true
+                    stacked: false
                 }
             },
             interaction: {
@@ -296,6 +330,11 @@ function setup_complete_lengths_per_reference_plot() {
                 intersect: false
             },
             animation: false,
+            tooltips: {
+                callbacks: {
+                    boxplotLabel: boxplot_tooltip
+                }
+            },
             onClick: function (_, elements) {
                 let element = elements[0];
 
@@ -310,8 +349,6 @@ function setup_complete_lengths_per_reference_plot() {
         document.getElementById('complete_lengths_per_reference_canvas'),
         config
     );
-
-    complete_lengths_per_reference_stat.addEventListener("change", () => update_complete_lengths_per_reference_plot());
 }
 
 function update_complete_lengths_per_reference_plot() {
@@ -323,15 +360,21 @@ function update_complete_lengths_per_reference_plot() {
 
         let file_names = get_file_list();
 
-        let stat_name = complete_lengths_per_reference_stat.value;
-
         for (const file_info of file_names) {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const data = get_dataset(name,"complete_lengths_per_reference_" + stat_name);
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"complete_lengths_per_reference_min"),
+                get_dataset(name,"complete_lengths_per_reference_q1"),
+                get_dataset(name,"complete_lengths_per_reference_median"),
+                get_dataset(name,"complete_lengths_per_reference_mean"),
+                get_dataset(name,"complete_lengths_per_reference_mode"),
+                get_dataset(name,"complete_lengths_per_reference_q3"),
+                get_dataset(name,"complete_lengths_per_reference_max"),
+            );
 
             let dataset = {
                 label: name,
@@ -353,12 +396,12 @@ const split_counts_file_logarithmic = document.getElementById("split_counts_file
 
 function setup_split_counts_file_plot() {
     let data = {
-        labels: ["Mean","Mode","Median","Least","Most"],
+        labels: ["File"],
         datasets: []
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: data,
         options: {
             plugins: {
@@ -397,7 +440,7 @@ function setup_split_counts_file_plot() {
 function update_split_counts_file_plot() {
     if (split_counts_file_plot) {
         let plot_data = {
-            labels: ["Mean","Mode","Median","Least","Most"],
+            labels: ["File"],
             datasets: []
         };
 
@@ -409,7 +452,15 @@ function update_split_counts_file_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const data = get_dataset(name,"split_counts_file");
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"split_counts_file_min"),
+                get_dataset(name,"split_counts_file_q1"),
+                get_dataset(name,"split_counts_file_median"),
+                get_dataset(name,"split_counts_file_mean"),
+                get_dataset(name,"split_counts_file_mode"),
+                get_dataset(name,"split_counts_file_q3"),
+                get_dataset(name,"split_counts_file_max"),
+            );
 
             let dataset = {
                 label: name,
@@ -436,7 +487,6 @@ function update_split_counts_file_plot() {
 
 let split_counts_per_reference_plot;
 const split_counts_per_reference_logarithmic = document.getElementById("split_counts_per_reference_logarithmic");
-const split_counts_per_reference_stat = document.getElementById("split_counts_per_reference_stat");
 
 function setup_split_counts_per_reference_plot() {
     let data = {
@@ -445,7 +495,7 @@ function setup_split_counts_per_reference_plot() {
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: data,
         options: {
             plugins: {
@@ -459,10 +509,10 @@ function setup_split_counts_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    stacked: false,
                 },
                 y: {
-                    stacked: true
+                    stacked: false
                 }
             },
             interaction: {
@@ -470,6 +520,11 @@ function setup_split_counts_per_reference_plot() {
                 intersect: false
             },
             animation: false,
+            tooltips: {
+                callbacks: {
+                    boxplotLabel: boxplot_tooltip
+                }
+            },
             onClick: function (_, elements) {
                 let element = elements[0];
 
@@ -486,7 +541,6 @@ function setup_split_counts_per_reference_plot() {
     );
 
     split_counts_per_reference_logarithmic.addEventListener("change", () => update_split_counts_per_reference_plot());
-    split_counts_per_reference_stat.addEventListener("change", () => update_split_counts_per_reference_plot());
 }
 
 function update_split_counts_per_reference_plot() {
@@ -497,7 +551,6 @@ function update_split_counts_per_reference_plot() {
         };
 
         let file_names = get_file_list();
-        let stat_name = split_counts_per_reference_stat.value;
 
         for (const file_info of file_names) {
             if (!file_info[2]) {continue;}
@@ -505,7 +558,15 @@ function update_split_counts_per_reference_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            const data = get_dataset(name,"split_counts_per_reference_" + stat_name);
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"split_counts_per_reference_min"),
+                get_dataset(name,"split_counts_per_reference_q1"),
+                get_dataset(name,"split_counts_per_reference_median"),
+                get_dataset(name,"split_counts_per_reference_mean"),
+                get_dataset(name,"split_counts_per_reference_mode"),
+                get_dataset(name,"split_counts_per_reference_q3"),
+                get_dataset(name,"split_counts_per_reference_max"),
+            );
 
             let dataset = {
                 label: name,

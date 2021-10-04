@@ -1,5 +1,6 @@
 import {get_reference_list, get_dataset, get_file_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
+import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
 
 export function setup_read_quality_plots() {
     setup_read_quality_file_plot();
@@ -204,8 +205,6 @@ function update_read_quality_selected_reference_plot() {
 
 let read_quality_per_reference_plot;
 
-const read_quality_per_reference_stat = document.getElementById("read_quality_per_reference_stat");
-
 function setup_read_quality_per_reference_plot() {
     let plot_data = {
         labels: [],
@@ -213,7 +212,7 @@ function setup_read_quality_per_reference_plot() {
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: plot_data,
         options: {
             plugins: {
@@ -237,17 +236,21 @@ function setup_read_quality_per_reference_plot() {
                     stacked: false
                 }
             },
+            tooltips: {
+                callbacks: {
+                    boxplotLabel: boxplot_tooltip
+                }
+            },
             onClick: function (_, elements) {
                 let element = elements[0];
 
                 if (element) {
-                    linking_update_selected_reference(element.index);
+                    console.log(element._index);
+                    linking_update_selected_reference(element.index || element._index);
                 }
             }
         }
     };
-
-    read_quality_per_reference_stat.addEventListener("change", () => update_read_quality_per_reference_plot())
 
     read_quality_per_reference_plot = new Chart(
         document.getElementById('read_quality_per_reference_canvas'),
@@ -270,7 +273,15 @@ function update_read_quality_per_reference_plot() {
             const name = file_info[0];
             const color = file_info[1][0];
 
-            let data = get_dataset(name, "read_quality_per_reference_" + read_quality_per_reference_stat.value);
+            const data = boxplot_from_separate_arrays(
+                get_dataset(name,"read_quality_per_reference_min"),
+                get_dataset(name,"read_quality_per_reference_q1"),
+                get_dataset(name,"read_quality_per_reference_median"),
+                get_dataset(name,"read_quality_per_reference_mean"),
+                get_dataset(name,"read_quality_per_reference_mode"),
+                get_dataset(name,"read_quality_per_reference_q3"),
+                get_dataset(name,"read_quality_per_reference_max"),
+            );
 
             let dataset = {
                 label: name,
