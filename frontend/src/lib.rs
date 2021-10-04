@@ -11,6 +11,7 @@ use segemehl_21_core::{
 mod util;
 mod file_list;
 mod chromosome_list;
+mod box_plots;
 
 #[global_allocator]
 static ALLOC: wee_alloc::WeeAlloc = wee_alloc::WeeAlloc::INIT;
