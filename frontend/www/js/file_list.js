@@ -175,7 +175,7 @@ function hookup_list_item_events(list_item) {
 function hookup_add_file_button_events() {
     const add_button = file_dropdown.querySelector(".file-list-add-button");
 
-    add_button.addEventListener("click", () => handle_add_file_button_click());
+    add_button.addEventListener("click", handle_add_file_button_click);
 }
 
 function clear_chromosome_select() {
