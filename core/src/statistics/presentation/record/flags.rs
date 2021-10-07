@@ -5,7 +5,8 @@ use bam::record::Flag;
 pub struct PresentationFlags {
     is_mapped: bool,
     is_split: bool,
-    is_reverse_strand: bool
+    is_reverse_strand: bool,
+    is_last_mate: bool
 }
 
 impl PresentationFlags {
@@ -20,6 +21,10 @@ impl PresentationFlags {
     pub fn get_is_reverse_strand(&self) -> bool {
         self.is_reverse_strand
     }
+
+    pub fn get_is_last_mate(&self) -> bool {
+        self.is_last_mate
+    }
 }
 
 impl From<Flag> for PresentationFlags {
@@ -27,11 +32,13 @@ impl From<Flag> for PresentationFlags {
         let is_mapped = flags.is_mapped();
         let is_split = flags.is_paired();
         let is_reverse_strand = flags.is_reverse_strand();
+        let is_last_mate = flags.last_in_pair();
 
         Self {
             is_mapped,
             is_split,
-             is_reverse_strand
+             is_reverse_strand,
+            is_last_mate
         }
     }
 }

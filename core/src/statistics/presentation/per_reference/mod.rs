@@ -75,7 +75,7 @@ impl PerReferencePresentationData {
         )
     }
 
-    pub fn calculate_from_data(value: PerReferenceCalculationData, mpb: &MultiProgress) -> PerReferencePresentationData {
+    pub fn calculate_from_data(value: PerReferenceCalculationData, mpb: &MultiProgress) -> Result<PerReferencePresentationData, ()> {
         let pb = mpb.add(ProgressBar::new_spinner());
 
         pb.set_message("Calculating Reference Statistics...");
@@ -107,15 +107,15 @@ impl PerReferencePresentationData {
             .progress_chars("#>-")
             .tick_chars("/-\\|"));
 
-        let split_read_data = SplitReadPerReferencePresentationData::from_calculation_data(value.split_read_data, value.reference_length, mpb);
+        let split_read_data = SplitReadPerReferencePresentationData::from_calculation_data(value.split_read_data, value.reference_length, mpb)?;
 
         pb.finish_with_message("Completed, waiting...");
 
-        Self {
+        Ok(Self {
             reference_name,
             reference_length,
             single_read_data,
             split_read_data
-        }
+        })
     }
 }

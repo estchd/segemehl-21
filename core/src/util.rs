@@ -44,10 +44,10 @@ pub fn calculate_bin(map_start: u32, bin_size: NonZeroU32, entry_index: u32) -> 
 		position_in_bin
 	})
 }
-pub fn get_record_name_as_string(record: &Record) -> Result<String, ()> {
+pub fn get_record_name_as_string(record: &Record) -> String {
 	let name = record.name();
 	let vec = Vec::from(name);
-	String::from_utf8(vec).map_err(|_| ())
+	String::from_utf8_lossy(&*vec).to_string()
 }
 
 pub fn get_record_length_on_reference(record: &Record) -> u32 {

@@ -13,7 +13,7 @@ impl UnmappedSplitReadCalculationData {
 		}
 	}
 
-	pub fn add_record(&self, record: Record) -> Result<(),()> {
-		self.assembler.add_record(record)
+	pub fn add_record(&self, record: Record) {
+		self.assembler.add_record(record);
 	}
 }

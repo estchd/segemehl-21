@@ -35,18 +35,17 @@ impl PerReferenceCalculationData {
         })
     }
 
-    pub fn add_record(&self, record: Record) -> Result<(),()> {
+    pub fn add_record(&self, record: Record) {
         let read_length = get_record_length_on_reference(&record);
 
         self.read_length_map.add_entry(read_length);
 
         let split = record.flag().is_paired();
         return if split {
-            self.split_read_data.add_record(record)
+            self.split_read_data.add_record(record);
         }
         else {
             self.single_read_data.add_record(record);
-            Ok(())
         }
     }
 }

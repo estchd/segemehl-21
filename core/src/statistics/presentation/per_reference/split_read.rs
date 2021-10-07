@@ -5,11 +5,13 @@ use crate::statistics::calculation::per_reference::split_read::SplitReadPerRefer
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use serde_derive::{Serialize, Deserialize};
 use std::convert::TryInto;
-use crate::statistics::presentation::assembler::map::PresentationAssemblerMap;
+use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
 use rayon::prelude::*;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use std::sync::atomic::{AtomicUsize, Ordering};
+use crate::statistics::presentation::assembler::presentation_record_collection::PresentationRecordCollection;
 use crate::statistics::presentation::cigar_operations::CigarOperations;
+use crate::statistics::presentation::split_read::collection::SplitReadCollection;
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct SplitReadPerReferencePresentationData {
@@ -66,7 +68,7 @@ impl SplitReadPerReferencePresentationData {
 		)
 	}
 
-	pub fn from_calculation_data(value: SplitReadPerReferenceCalculationData, ref_length: u32, mpb: &MultiProgress) -> Self {
+	pub fn from_calculation_data(value: SplitReadPerReferenceCalculationData, ref_length: u32, mpb: &MultiProgress) -> Result<Self,()> {
 		let pb = mpb.add(ProgressBar::new(4));
 		pb.set_message("Converting Calculation Data...");
 		pb.set_prefix("[1/4]");
@@ -75,8 +77,6 @@ impl SplitReadPerReferencePresentationData {
 			.progress_chars("#>-")
 			.tick_chars("/-\\|"));
 		pb.enable_steady_tick(60/15);
-
-		let presentation_assembler: PresentationAssemblerMap = value.assembler.try_into().unwrap();
 
 		pb.set_position(1);
 
@@ -93,8 +93,11 @@ impl SplitReadPerReferencePresentationData {
 
 		pb.set_position(4);
 
-		let hash_map = presentation_assembler
-			.into_map();
+		let presentation_record_collection: PresentationRecordCollection = value.assembler.into();
+		let presentation_assembler_collection: PresentationAssemblerCollection = presentation_record_collection.try_into()?;
+		let split_read_collection: SplitReadCollection = presentation_assembler_collection.into();
+		let split_reads = split_read_collection
+			.into_inner();
 
 		pb.reset_eta();
 		pb.reset_elapsed();
@@ -102,17 +105,16 @@ impl SplitReadPerReferencePresentationData {
 		pb.set_prefix("[2/4]");
 		pb.set_position(0);
 
-		let length = hash_map.len();
+		let length = split_reads.len();
 		pb.set_length(length as u64);
 
 		let calculated_count = AtomicUsize::new(0);
 
 		let gap_length_map = CalculationFrequencyMap::<i64>::new();
 
-		(&hash_map)
-			.iter()
-			.par_bridge()
-			.for_each(|(_,assembler)| {
+		(&split_reads)
+			.into_par_iter()
+			.for_each(|assembler| {
 				assembler.calculate_gap_lengths_into_map(ref_length, &gap_length_map);
 
 				let current_count = calculated_count.fetch_add(1, Ordering::Relaxed);
@@ -140,8 +142,10 @@ impl SplitReadPerReferencePresentationData {
 		let split_count_map = CalculationFrequencyMap::new();
 		let split_count_unmapped_map = CalculationFrequencyMap::new();
 
-		(&hash_map).iter().par_bridge().for_each(
-			|(_, assembler)| {
+		(&split_reads)
+			.into_par_iter()
+			.for_each(
+				|assembler| {
 				assembler_length_map.add_entry(assembler.get_total_length(Some(ref_length)));
 				split_count_map.add_entry(assembler.get_split_count(false));
 				split_count_unmapped_map.add_entry(assembler.get_split_count(true));
@@ -179,7 +183,7 @@ impl SplitReadPerReferencePresentationData {
 
 		pb.finish_with_message("completed, waiting...");
 
-		Self {
+		Ok(Self {
 			quality_map,
 			read_length_on_reference_map,
 			read_length_sequence_map,
@@ -188,6 +192,6 @@ impl SplitReadPerReferencePresentationData {
 			gap_length_map,
 			split_count_map,
 			split_count_unmapped_map
-		}
+		})
 	}
 }

@@ -31,7 +31,7 @@ impl SplitReadPerReferenceCalculationData {
 		})
 	}
 
-	pub fn add_record(&self, record: Record) -> Result<(),()> {
+	pub fn add_record(&self, record: Record) {
 		let quality = get_record_mapping_quality(&record);
 		let sequence_length = get_record_length_sequence(&record);
 		let on_reference_length = get_record_length_on_reference(&record);
@@ -40,6 +40,6 @@ impl SplitReadPerReferenceCalculationData {
 		self.read_length_sequence_map.add_entry(sequence_length);
 		self.read_length_on_reference_map.add_entry(on_reference_length);
 		self.binned_statistics.add_record(&record);
-		self.assembler.add_record(record)
+		self.assembler.add_record(record);
 	}
 }

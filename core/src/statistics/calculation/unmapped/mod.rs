@@ -23,7 +23,8 @@ impl UnmappedCalculationData {
 		let is_split = record.flag().is_paired();
 
 		if is_split {
-			self.split_read.add_record(record)
+			self.split_read.add_record(record);
+			Ok(())
 		}
 		else {
 			self.single_read.add_record(record)

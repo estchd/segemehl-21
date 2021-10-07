@@ -18,6 +18,7 @@ pub mod unmapped;
 pub mod assembler;
 pub mod record;
 pub mod cigar_operations;
+pub mod split_read;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PresentationData {
@@ -213,7 +214,7 @@ impl TryFrom<CalculationData> for PresentationData {
                 pb.inc(1);
                 value
             })
-            .collect::<Vec<PerReferencePresentationData>>();
+            .collect::<Result<Vec<PerReferencePresentationData>,()>>()?;
 
         pb.reset_elapsed();
         pb.reset_eta();

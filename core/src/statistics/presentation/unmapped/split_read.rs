@@ -29,13 +29,11 @@ impl TryFrom<UnmappedSplitReadCalculationData> for UnmappedSplitReadPresentation
 
         let entries = value.assembler.map.into_inner().map_err(|_| ())?;
 
-        let assembler_iter = entries.into_iter().map(|(_,entry)| entry);
+        let assembler_iter = entries.into_iter().map(|(_,entry)| entry.into_inner().unwrap());
 
-        for assembler in assembler_iter {
-            let records = assembler.associated_records.into_inner().map_err(|_| ())?;
-
-            for record in records {
-                map.add_entry(get_record_length_on_reference(&record));
+        for records in assembler_iter {
+            for (_,record) in records {
+                map.add_entry(get_record_length_on_reference(&record.lock().unwrap()));
             }
         }
 

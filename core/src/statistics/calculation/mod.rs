@@ -66,6 +66,7 @@ impl CalculationData {
 
         let per_reference = &self.per_reference[ref_id as usize];
 
-        per_reference.add_record(record)
+        per_reference.add_record(record);
+        Ok(())
     }
 }
