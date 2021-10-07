@@ -1,5 +1,6 @@
-import {get_reference_list, get_dataset, get_file_list} from "../wasm_binding";
+import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
+import {bin_data_to_line_data, calculate_decimation_size, decimate_bin_data_mean, generate_labels} from "./line_plot";
 
 export function setup_cigar_plots() {
     setup_cigar_total_file_plot();
@@ -246,11 +247,7 @@ function setup_cigar_total_per_reference_plot() {
             },
             animation: false,
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    linking_update_selected_reference(element.index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };
@@ -364,7 +361,9 @@ function setup_cigar_percentage_per_reference_plot() {
                             }
                             return label;
                         }
-                    }
+                    },
+                    mode: "index",
+                    intersect: false,
                 },
             },
             locale: "de-DE",
@@ -387,11 +386,7 @@ function setup_cigar_percentage_per_reference_plot() {
             },
             animation: false,
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    linking_update_selected_reference(element.index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };
@@ -472,13 +467,18 @@ function setup_cigar_total_per_bin_plot() {
     };
 
     let config = {
-        type: 'bar',
+        type: 'line',
         data: data,
         options: {
             plugins: {
                 title: {
                     display: false,
                     text: "Cigar Operations per Bin (Total Count)"
+                },
+                tooltips: {
+                    enabled: true,
+                    mode: "index",
+                    intersect: false,
                 },
             },
             locale: "de-DE",
@@ -494,9 +494,13 @@ function setup_cigar_total_per_bin_plot() {
             },
             interaction: {
                 mode: 'index',
-                intersect: false
+                intersect: false,
+                axis: "x"
             },
-            animation: false
+            animation: false,
+            line: {
+                cubicInterpolationMode: "monotone"
+            }
         }
     };
 
@@ -512,12 +516,12 @@ function setup_cigar_total_per_bin_plot() {
 function update_cigar_total_per_bin_plot() {
     if (cigar_total_per_bin_plot) {
         let plot_data = {
+            labels: [],
             datasets: []
         };
 
         let file_names = get_file_list();
 
-        let max_bin_count = 0;
 
         for (let i = 0; i < file_names.length; i++) {
             let file_info = file_names[i];
@@ -529,38 +533,63 @@ function update_cigar_total_per_bin_plot() {
 
             const reference_name = selected_reference.value;
 
-            const match_data = get_dataset(name,reference_name + "_cigar_total_per_bin_match");
-            const insertion_data = get_dataset(name,reference_name + "_cigar_total_per_bin_insertion");
-            const deletion_data = get_dataset(name,reference_name + "_cigar_total_per_bin_deletion");
-            const skip_data = get_dataset(name,reference_name + "_cigar_total_per_bin_skip");
+            let bin_size = get_dataset(name, "bin_size")[0];
 
-            max_bin_count = Math.max(match_data.length, max_bin_count);
+            let match_line_data = bin_data_to_line_data(get_dataset(name, reference_name + "_cigar_total_per_bin_match"));
+            let insertion_line_data = bin_data_to_line_data(get_dataset(name, reference_name + "_cigar_total_per_bin_insertion"));
+            let deletion_line_data = bin_data_to_line_data(get_dataset(name, reference_name + "_cigar_total_per_bin_deletion"));
+            let skip_line_data = bin_data_to_line_data(get_dataset(name, reference_name + "_cigar_total_per_bin_skip"));
+
+            let decimated_match_data = decimate_bin_data_mean(match_line_data, 1000, 1000);
+            let decimated_insertion_data = decimate_bin_data_mean(insertion_line_data, 1000, 1000);
+            let decimated_deletion_data = decimate_bin_data_mean(deletion_line_data, 1000, 1000);
+            let decimated_skip_data = decimate_bin_data_mean(skip_line_data, 1000, 1000);
+
+            let decimation_size = calculate_decimation_size(match_line_data, 1000, 1000);
+            plot_data.labels = generate_labels(decimated_match_data, bin_size * decimation_size);
+
 
             let match_dataset = {
                 label: name + " Alignment Matches",
-                data: match_data,
+                data: decimated_match_data,
                 backgroundColor: color[1],
-                stack: "" + i
+                borderColor: color[1],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 0,
+                fill: false,
             };
 
             let insertion_dataset = {
                 label: name + " Insertions",
-                data: insertion_data,
+                data: decimated_insertion_data,
                 backgroundColor: color[2],
-                stack: "" + i
+                borderColor: color[2],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 0,
+                fill: false,
             }
 
             let deletion_dataset = {
                 label: name + " Deletions",
-                data: deletion_data,
+                data: decimated_deletion_data,
                 backgroundColor: color[3],
-                stack: "" + i
+                borderColor: color[3],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 0,
+                fill: false,
             }
             let skip_dataset = {
                 label: name + " Skips",
-                data: skip_data,
+                data: decimated_skip_data,
                 backgroundColor: color[4],
-                stack: "" + i
+                borderColor: color[4],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 0,
+                fill: false,
             }
 
             plot_data.datasets.push(match_dataset);
@@ -577,14 +606,6 @@ function update_cigar_total_per_bin_plot() {
         else {
             cigar_total_per_bin_plot.config.options.scales.y.type=undefined;
         }
-
-        let labels = [];
-
-        for (let i = 0; i <= max_bin_count; i++) {
-            labels.push(i)
-        }
-
-        plot_data.labels = labels;
 
         cigar_total_per_bin_plot.config.data = plot_data;
         cigar_total_per_bin_plot.update();
@@ -623,7 +644,9 @@ function setup_cigar_percentage_per_bin_plot() {
                             }
                             return label;
                         }
-                    }
+                    },
+                    mode: "index",
+                    intersect: false,
                 },
             },
             locale: "de-DE",
@@ -644,7 +667,10 @@ function setup_cigar_percentage_per_bin_plot() {
                 mode: 'index',
                 intersect: false
             },
-            animation: false
+            animation: false,
+            line: {
+                cubicInterpolationMode: "monotone"
+            }
         }
     };
 
@@ -657,12 +683,11 @@ function setup_cigar_percentage_per_bin_plot() {
 function update_cigar_percentage_per_bin_plot() {
     if (cigar_percentage_per_bin_plot) {
         let plot_data = {
+            labels: [],
             datasets: []
         };
 
         let file_names = get_file_list();
-
-        let max_bin_count = 0;
 
         for (let i = 0; i < file_names.length; i++) {
             let file_info = file_names[i];
@@ -674,38 +699,68 @@ function update_cigar_percentage_per_bin_plot() {
 
             const reference_name = selected_reference.value;
 
-            const match_data = get_dataset(name,reference_name + "_cigar_percentage_per_bin_match");
-            const insertion_data = get_dataset(name,reference_name + "_cigar_percentage_per_bin_insertion");
-            const deletion_data = get_dataset(name,reference_name + "_cigar_percentage_per_bin_deletion");
-            const skip_data = get_dataset(name,reference_name + "_cigar_percentage_per_bin_skip");
+            let bin_size = get_dataset(name, "bin_size")[0];
 
-            max_bin_count = Math.max(match_data.length, max_bin_count);
+            let match_data = get_dataset(name, reference_name + "_cigar_percentage_per_bin_match");
+            let insertion_data = get_dataset(name, reference_name + "_cigar_percentage_per_bin_insertion");
+            let deletion_data = get_dataset(name, reference_name + "_cigar_percentage_per_bin_deletion");
+            let skip_data = get_dataset(name, reference_name + "_cigar_percentage_per_bin_skip");
+
+            let match_line_data = bin_data_to_line_data(match_data);
+            let insertion_line_data = bin_data_to_line_data(insertion_data);
+            let deletion_line_data = bin_data_to_line_data(deletion_data);
+            let skip_line_data = bin_data_to_line_data(skip_data);
+
+            let decimated_match_data = decimate_bin_data_mean(match_line_data, 1000, 1000);
+            let decimated_insertion_data = decimate_bin_data_mean(insertion_line_data, 1000, 1000);
+            let decimated_deletion_data = decimate_bin_data_mean(deletion_line_data, 1000, 1000);
+            let decimated_skip_data = decimate_bin_data_mean(skip_line_data, 1000, 1000);
+
+            let decimation_size = calculate_decimation_size(match_line_data, 1000, 1000);
+
+            plot_data.labels = generate_labels(decimated_match_data, bin_size * decimation_size);
 
             let match_dataset = {
                 label: name + " Alignment Matches",
-                data: match_data,
+                data: decimated_match_data,
                 backgroundColor: color[1],
-                stack: "" + i
+                borderColor: color[1],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 1,
+                fill: false,
             };
 
             let insertion_dataset = {
                 label: name + " Insertions",
-                data: insertion_data,
+                data: decimated_insertion_data,
                 backgroundColor: color[2],
-                stack: "" + i
+                borderColor: color[2],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 1,
+                fill: false,
             }
 
             let deletion_dataset = {
                 label: name + " Deletions",
-                data: deletion_data,
+                data: decimated_deletion_data,
                 backgroundColor: color[3],
-                stack: "" + i
+                borderColor: color[3],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 1,
+                fill: false,
             }
             let skip_dataset = {
                 label: name + " Skips",
-                data: skip_data,
+                data: decimated_skip_data,
                 backgroundColor: color[4],
-                stack: "" + i
+                borderColor: color[4],
+                borderWidth: 1,
+                stack: "" + i,
+                radius: 1,
+                fill: false,
             }
 
             plot_data.datasets.push(match_dataset);
@@ -713,14 +768,6 @@ function update_cigar_percentage_per_bin_plot() {
             plot_data.datasets.push(deletion_dataset);
             plot_data.datasets.push(skip_dataset);
         }
-
-        let labels = [];
-
-        for (let i = 0; i <= max_bin_count; i++) {
-            labels.push(i)
-        }
-
-        plot_data.labels = labels;
 
         cigar_percentage_per_bin_plot.config.data = plot_data;
         cigar_percentage_per_bin_plot.update();

@@ -53,11 +53,7 @@ function setup_reference_length_plot() {
             },
             animation: false,
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    linking_update_selected_reference(element.index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };

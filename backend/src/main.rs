@@ -14,7 +14,6 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use anyhow::{Context};
 
 use segemehl_21_core::{
-    statistics::calculation::binned::BinConfig,
     statistics::calculation::CalculationData,
     statistics::presentation::PresentationData,
     util::get_record_length_on_reference
@@ -35,6 +34,7 @@ fn main() -> anyhow::Result<()> {
     let bam_path = params.bam_path.as_str();
     let bai_path = params.bai_path;
     let expected_record_count = params.expected_record_count;
+    let bin_size = params.bin_size.unwrap_or(NonZeroU32::new(10000).unwrap());
     let info_dump = params.info_dump;
 
     println!();
@@ -87,11 +87,8 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-    //TODO Make this a console parameter
-    let bin_config = BinConfig::NumberOfBins(NonZeroU32::new(1000).unwrap());
-
     //TODO Error handling here
-    let calculation_data = CalculationData::new(&header, bin_config).unwrap();
+    let calculation_data = CalculationData::new(&header, bin_size).unwrap();
 
     let total_record_stats: (AtomicUsize, AtomicUsize) = (AtomicUsize::new(0), AtomicUsize::new(0));
 

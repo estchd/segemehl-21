@@ -74,7 +74,13 @@ function update_reference_dependent_plots() {
 
 const selected_chromosome = document.getElementById("chromosome-select");
 
-export function linking_update_selected_reference(index) {
+export function linking_update_selected_reference(element) {
+    if (!element) {
+        return;
+    }
+
+    let index = element.index || element._index;
+
     let reference_names = get_reference_list();
     if (reference_names[index]) {
         selected_chromosome.value = reference_names[index];

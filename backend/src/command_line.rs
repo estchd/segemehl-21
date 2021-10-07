@@ -1,3 +1,4 @@
+use std::num::{NonZeroU32};
 use clap::{App, Arg};
 
 pub struct CommandLineParameters {
@@ -5,6 +6,7 @@ pub struct CommandLineParameters {
     pub bai_path: Option<String>,
     pub output_path: String,
     pub expected_record_count: Option<usize>,
+    pub bin_size: Option<NonZeroU32>,
     pub info_dump: bool
 }
 
@@ -49,6 +51,15 @@ impl CommandLineParameters {
                     .validator(number_validator)
             )
             .arg(
+                Arg::with_name("bin_size")
+                    .long("bin_size")
+                    .value_name("BIN_SIZE")
+                    .help("The bin size that should be used")
+                    .takes_value(true)
+                    .required(false)
+                    .validator(non_zero_number_validator)
+            )
+            .arg(
                 Arg::with_name("info_dump")
                     .long("info_dump")
                     .value_name("INFO_DUMP")
@@ -64,6 +75,9 @@ impl CommandLineParameters {
             .unwrap_or("statistics.json".to_string());
         let expected_record_count = matches.value_of("expected_record_count")
             .map(|item| item.parse::<usize>().unwrap());
+        let bin_size = matches.value_of("bin_size")
+                .map(|item| item.parse::<u32>().unwrap())
+                .map(|item| NonZeroU32::new(item).unwrap());
 
         let info_dump = matches.is_present("info_dump");
 
@@ -72,6 +86,7 @@ impl CommandLineParameters {
             bai_path,
             output_path,
             expected_record_count,
+            bin_size,
             info_dump
         }
     }
@@ -81,4 +96,13 @@ fn number_validator(value: String) -> Result<(),String> {
     value.parse::<usize>()
         .map(|_| ())
         .map_err(|err| format!("{}", err))
+}
+
+fn non_zero_number_validator(value: String) -> Result<(), String> {
+    let number = value.parse::<u32>()
+        .map_err(|err| format!("{}", err))?;
+
+    NonZeroU32::new(number)
+        .map(|_| ())
+        .ok_or("Number was Zero".to_string())
 }

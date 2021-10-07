@@ -242,12 +242,7 @@ function setup_read_quality_per_reference_plot() {
                 }
             },
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    console.log(element._index);
-                    linking_update_selected_reference(element.index || element._index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };

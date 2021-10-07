@@ -155,11 +155,7 @@ function setup_gap_lengths_per_reference_plot() {
                 }
             },
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    linking_update_selected_reference(element.index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };
@@ -336,11 +332,7 @@ function setup_complete_lengths_per_reference_plot() {
                 }
             },
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    linking_update_selected_reference(element.index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };
@@ -526,11 +518,7 @@ function setup_split_counts_per_reference_plot() {
                 }
             },
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    linking_update_selected_reference(element.index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };

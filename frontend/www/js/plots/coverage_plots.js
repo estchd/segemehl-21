@@ -1,5 +1,7 @@
-import {get_reference_list, get_dataset, get_file_list} from "../wasm_binding";
+import "chartjs-plugin-downsample"
+import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
+import {bin_data_to_line_data, calculate_decimation_size, decimate_bin_data_mean, generate_labels} from "./line_plot";
 
 export function setup_coverage_plots() {
     setup_read_counts_per_reference_plot();
@@ -52,10 +54,10 @@ function setup_read_counts_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    stacked: false,
                 },
                 y: {
-                    stacked: true
+                    stacked: false
                 }
             },
             interaction: {
@@ -111,13 +113,9 @@ function update_read_counts_per_reference_plot() {
 
         if (logarithmic) {
             read_counts_per_reference_plot.config.options.scales.y.type="logarithmic";
-            read_counts_per_reference_plot.config.options.scales.y.stacked=false;
-            read_counts_per_reference_plot.config.options.scales.x.stacked=false;
         }
         else {
             read_counts_per_reference_plot.config.options.scales.y.type=undefined;
-            read_counts_per_reference_plot.config.options.scales.y.stacked=true;
-            read_counts_per_reference_plot.config.options.scales.x.stacked=true;
         }
 
         read_counts_per_reference_plot.config.data = plot_data;
@@ -142,7 +140,7 @@ function setup_read_counts_per_bin_on_reference_plot() {
                 title: {
                     display: false,
                     text: "Read Counts per Bin on selected Chromosome"
-                },
+                }
             },
             locale: "de-DE",
             responsive: true,
@@ -159,7 +157,10 @@ function setup_read_counts_per_bin_on_reference_plot() {
                     stacked: false
                 }
             },
-            animation: false
+            animation: false,
+            line: {
+                cubicInterpolationMode: "monotone"
+            }
         }
     };
 
@@ -180,8 +181,6 @@ function update_read_counts_per_bin_on_reference_plot() {
 
         let reference = selected_reference.value;
 
-        let max_bin_count = 0;
-
         for (const file_info of file_names) {
             if (!file_info[2]) {continue;}
 
@@ -190,23 +189,24 @@ function update_read_counts_per_bin_on_reference_plot() {
 
             const dataset_name = reference + "_read_counts_per_bin";
 
-            let data = get_dataset(name, dataset_name);
+            let bin_size = get_dataset(name, "bin_size")[0];
+            let line_data = bin_data_to_line_data(get_dataset(name, dataset_name));
+            let decimated_data = decimate_bin_data_mean(line_data, 1000, 1000);
 
-            max_bin_count = Math.max(max_bin_count, data.length);
+            let decimation_size = calculate_decimation_size(line_data, 1000, 1000);
+            plot_data.labels = generate_labels(decimated_data, bin_size * decimation_size);
 
             let dataset = {
                 label: name,
-                data: data,
-                backgroundColor: color
+                data: decimated_data,
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 1,
+                radius: 1,
+                fill: false,
             };
 
             plot_data.datasets.push(dataset);
-        }
-
-        let labels = [];
-
-        for (let i = 0; i < max_bin_count; i++) {
-            labels.push(i);
         }
 
         const logarithmic = read_counts_per_bin_on_reference_logarithmic.checked;
@@ -218,7 +218,6 @@ function update_read_counts_per_bin_on_reference_plot() {
             read_counts_per_bin_on_reference_plot.config.options.scales.y.type=undefined;
         }
 
-        plot_data.labels = labels;
         read_counts_per_bin_on_reference_plot.config.data = plot_data;
         read_counts_per_bin_on_reference_plot.update();
     }
@@ -248,10 +247,10 @@ function setup_total_read_length_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    stacked: false,
                 },
                 y: {
-                    stacked: true
+                    stacked: false
                 }
             },
             interaction: {
@@ -307,13 +306,9 @@ function update_total_read_length_per_reference_plot() {
 
         if (logarithmic) {
             total_read_length_per_reference_plot.config.options.scales.y.type="logarithmic";
-            total_read_length_per_reference_plot.config.options.scales.y.stacked=false;
-            total_read_length_per_reference_plot.config.options.scales.x.stacked=false;
         }
         else {
             total_read_length_per_reference_plot.config.options.scales.y.type=undefined;
-            total_read_length_per_reference_plot.config.options.scales.y.stacked=true;
-            total_read_length_per_reference_plot.config.options.scales.x.stacked=true;
         }
 
         total_read_length_per_reference_plot.config.data = plot_data;
@@ -338,7 +333,7 @@ function setup_total_read_length_per_bin_on_reference_plot() {
                 title: {
                     display: false,
                     text: "Total Read Length per Bin on selected Chromosome"
-                },
+                }
             },
             locale: "de-DE",
             responsive: true,
@@ -355,7 +350,10 @@ function setup_total_read_length_per_bin_on_reference_plot() {
                     stacked: false
                 }
             },
-            animation: false
+            animation: false,
+            line: {
+                cubicInterpolationMode: "monotone"
+            }
         }
     };
 
@@ -378,8 +376,6 @@ function update_total_read_length_per_bin_on_reference_plot() {
 
         let reference = selected_reference.value;
 
-        let max_bin_count = 0;
-
         for (const file_info of file_names) {
             if (!file_info[2]) {continue;}
 
@@ -388,23 +384,24 @@ function update_total_read_length_per_bin_on_reference_plot() {
 
             const dataset_name = reference + "_total_read_length_per_bin";
 
-            let data = get_dataset(name, dataset_name);
+            let bin_size = get_dataset(name, "bin_size")[0];
+            let line_data = bin_data_to_line_data(get_dataset(name, dataset_name));
+            let decimated_data = decimate_bin_data_mean(line_data, 1000, 1000);
 
-            max_bin_count = Math.max(max_bin_count, data.length);
+            let decimation_size = calculate_decimation_size(line_data, 1000, 1000);
+            plot_data.labels = generate_labels(decimated_data, bin_size * decimation_size);
 
             let dataset = {
                 label: name,
-                data: data,
-                backgroundColor: color
+                data: decimated_data,
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 1,
+                radius: 1,
+                fill: false,
             };
 
             plot_data.datasets.push(dataset);
-        }
-
-        let labels = [];
-
-        for (let i = 0; i < max_bin_count; i++) {
-            labels.push(i);
         }
 
         const logarithmic = total_read_length_per_bin_on_reference_logarithmic.checked;
@@ -416,7 +413,6 @@ function update_total_read_length_per_bin_on_reference_plot() {
             total_read_length_per_bin_on_reference_plot.config.options.scales.y.type=undefined;
         }
 
-        plot_data.labels = labels;
         total_read_length_per_bin_on_reference_plot.config.data = plot_data;
         total_read_length_per_bin_on_reference_plot.update();
     }
@@ -455,7 +451,7 @@ function setup_coverage_per_reference_plot() {
                             return label;
                         }
                     }
-                },
+                }
             },
             locale: "de-DE",
             responsive: true,
@@ -477,11 +473,7 @@ function setup_coverage_per_reference_plot() {
             },
             animation: false,
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    linking_update_selected_reference(element.index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };
@@ -512,7 +504,7 @@ function update_coverage_per_reference_plot() {
             let dataset = {
                 label: name,
                 data: data,
-                backgroundColor: color
+                backgroundColor: color,
             };
 
             plot_data.datasets.push(dataset);
@@ -527,7 +519,6 @@ let coverage_per_bin_on_reference_plot;
 
 function setup_coverage_per_bin_on_reference_plot() {
     let data = {
-        labels: [],
         datasets: []
     };
 
@@ -539,7 +530,7 @@ function setup_coverage_per_bin_on_reference_plot() {
                 title: {
                     display: false,
                     text: "Coverage per Bin on selected Chromosome"
-                },
+                }
             },
             tooltip: {
                 enabled: true,
@@ -562,21 +553,31 @@ function setup_coverage_per_bin_on_reference_plot() {
             responsive: true,
             maintainAspectRatio: true,
             interaction: {
-                mode: 'index',
+                mode: "index",
+                axis: "x",
                 intersect: false
             },
             scales: {
                 x: {
-                    stacked: false,
+                    type: "linear",
+                    ticks: {
+                        source: 'auto',
+                        // Disabled rotation for performance
+                        maxRotation: 0,
+                        autoSkip: true,
+                    }
                 },
                 y: {
-                    stacked: false,
                     ticks: {
                         callback: function(value){return value+"%"}
                     }
                 }
             },
-            animation: false
+            animation: false,
+            parsing: false,
+            line: {
+                cubicInterpolationMode: "monotone"
+            }
         }
     };
 
@@ -589,6 +590,7 @@ function setup_coverage_per_bin_on_reference_plot() {
 function update_coverage_per_bin_on_reference_plot() {
     if (coverage_per_bin_on_reference_plot) {
         let plot_data = {
+            indexAxis: "x",
             labels: [],
             datasets: []
         };
@@ -596,8 +598,6 @@ function update_coverage_per_bin_on_reference_plot() {
         let file_names = get_file_list();
 
         let reference = selected_reference.value;
-
-        let max_bin_count = 0;
 
         for (const file_info of file_names) {
             if (!file_info[2]) {continue;}
@@ -607,26 +607,26 @@ function update_coverage_per_bin_on_reference_plot() {
 
             const dataset_name = reference + "_coverage_per_bin";
 
-            let data = get_dataset(name, dataset_name);
+            let bin_size = get_dataset(name, "bin_size")[0];
+            let line_data = bin_data_to_line_data(get_dataset(name, dataset_name));
+            let decimated_data = decimate_bin_data_mean(line_data, 1000, 1000);
 
-            max_bin_count = Math.max(max_bin_count, data.length);
+            let decimation_size = calculate_decimation_size(line_data, 1000, 1000);
+            plot_data.labels = generate_labels(decimated_data, bin_size * decimation_size);
 
             let dataset = {
                 label: name,
-                data: data,
-                backgroundColor: color
+                data: decimated_data,
+                backgroundColor: color,
+                borderColor: color,
+                borderWidth: 1,
+                radius: 1,
+                fill: false,
             };
 
             plot_data.datasets.push(dataset);
         }
 
-        let labels = [];
-
-        for (let i = 0; i < max_bin_count; i++) {
-            labels.push(i);
-        }
-
-        plot_data.labels = labels;
         coverage_per_bin_on_reference_plot.config.data = plot_data;
         coverage_per_bin_on_reference_plot.update();
     }

@@ -1,3 +1,4 @@
+use std::num::{NonZeroU32};
 use bam::Record;
 
 use per_reference::PerReferenceCalculationData;
@@ -5,6 +6,7 @@ use per_reference::PerReferenceCalculationData;
 use crate::header::Header;
 use binned::BinConfig;
 use crate::statistics::calculation::unmapped::UnmappedCalculationData;
+use crate::statistics::shared::meta::Meta;
 
 pub mod assembler;
 pub mod unmapped;
@@ -15,22 +17,26 @@ pub mod frequency_map;
 #[derive(Debug)]
 pub struct CalculationData {
     pub(crate) unmapped: UnmappedCalculationData,
-    pub(crate) per_reference: Vec<PerReferenceCalculationData>
+    pub(crate) per_reference: Vec<PerReferenceCalculationData>,
+    pub(crate) meta: Meta
 }
 
 impl CalculationData {
-    pub fn new(header: &Header, bin_config: BinConfig) -> Result<Self, ()> {
+    pub fn new(header: &Header, bin_size: NonZeroU32) -> Result<Self, ()> {
         let unmapped = UnmappedCalculationData::new();
         let mut per_reference = Vec::new();
 
         for ref_sequence in header.reference_sequences.iter() {
-            let per_reference_data = PerReferenceCalculationData::new(ref_sequence, bin_config)?;
+            let per_reference_data = PerReferenceCalculationData::new(ref_sequence, BinConfig::LengthOfBins(bin_size))?;
             per_reference.push(per_reference_data);
         }
 
         Ok(Self {
             unmapped,
-            per_reference
+            per_reference,
+            meta: Meta {
+                bin_size
+            }
         })
     }
 

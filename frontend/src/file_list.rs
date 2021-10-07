@@ -209,6 +209,12 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 
 	repository.insert("reference_length".to_string(), reference_length_data.clone());
 
+	let bin_size_data: Vec<f64> = data.get_per_reference_data().map(
+		|_| data.get_metadata().bin_size.get() as f64
+	).collect();
+
+	repository.insert("bin_size".to_string(), bin_size_data);
+
 	////////////////////////////////////////////////////////////////////////////
 	// --------------------------- Split Read ------------------------------- //
 	////////////////////////////////////////////////////////////////////////////

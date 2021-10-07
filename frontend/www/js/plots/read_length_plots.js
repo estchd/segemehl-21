@@ -230,12 +230,7 @@ function setup_read_length_sequence_per_reference() {
                 }
             },
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    console.log(element._index);
-                    linking_update_selected_reference(element.index || element._index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };
@@ -325,12 +320,7 @@ function setup_read_length_on_reference_per_reference() {
                 }
             },
             onClick: function (_, elements) {
-                let element = elements[0];
-
-                if (element) {
-                    console.log(element._index);
-                    linking_update_selected_reference(element.index || element._index);
-                }
+                linking_update_selected_reference(elements[0]);
             }
         }
     };

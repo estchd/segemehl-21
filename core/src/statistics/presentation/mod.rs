@@ -1,15 +1,15 @@
-use crate::statistics::presentation::per_reference::PerReferencePresentationData;
-
-use serde_derive::{Deserialize, Serialize};
 use std::convert::{TryFrom, TryInto};
+
+use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
+use serde_derive::{Deserialize, Serialize};
+
 use crate::statistics::calculation::CalculationData;
-use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
-use crate::util::get_quality_frequency_map;
-use crate::statistics::presentation::unmapped::UnmappedPresentationData;
-use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use crate::statistics::presentation::cigar_operations::CigarOperations;
-use crate::statistics::presentation::meta::BinConfig::FixedCount;
-use crate::statistics::presentation::meta::Meta;
+use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
+use crate::statistics::presentation::per_reference::PerReferencePresentationData;
+use crate::statistics::presentation::unmapped::UnmappedPresentationData;
+use crate::statistics::shared::meta::Meta;
+use crate::util::get_quality_frequency_map;
 
 pub mod frequency_map;
 pub mod binned;
@@ -18,7 +18,6 @@ pub mod unmapped;
 pub mod assembler;
 pub mod record;
 pub mod cigar_operations;
-pub mod meta;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PresentationData {
@@ -28,6 +27,10 @@ pub struct PresentationData {
 }
 
 impl PresentationData {
+    pub fn get_metadata(&self) -> &Meta {
+        &self.meta
+    }
+
     pub fn get_complete_quality_frequency(&self) -> PresentationFrequencyMap<u8> {
         self.per_reference.iter()
             .map(|item| item.get_quality_frequency())
@@ -231,9 +234,7 @@ impl TryFrom<CalculationData> for PresentationData {
         Ok(Self {
             per_reference,
             unmapped,
-            meta: Meta {
-                bin_config: FixedCount(1000),
-            }
+            meta: value.meta
         })
     }
 }
