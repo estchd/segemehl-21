@@ -107,7 +107,7 @@ impl PerReferencePresentationData {
             .progress_chars("#>-")
             .tick_chars("/-\\|"));
 
-        let split_read_data = SplitReadPerReferencePresentationData::from_calculation_data(value.split_read_data, value.reference_length, mpb)?;
+        let split_read_data = SplitReadPerReferencePresentationData::from_calculation_data(value.split_read_data, mpb)?;
 
         pb.finish_with_message("Completed, waiting...");
 

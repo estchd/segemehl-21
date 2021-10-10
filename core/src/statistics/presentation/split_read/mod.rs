@@ -15,80 +15,64 @@ pub struct SplitRead {
 }
 
 impl SplitRead {
-	pub fn get_gap_length_map(&self, ref_length: u32) -> PresentationFrequencyMap<i64> {
+	pub fn get_gap_length_map(&self) -> PresentationFrequencyMap<i64> {
 		let calculation_map = CalculationFrequencyMap::new();
 
-		let mut forward_max = 0u32;
-		let mut reverse_max = 0u32;
-
-		let mut last_end = None;
-		for record in &self.forward_strand_records {
-			forward_max = max(forward_max, record.get_end());
-
-			if let Some(end) = last_end {
-				let gap_length = record.get_start() as i64 - end as i64;
-				calculation_map.add_entry(gap_length);
-			}
-
-			last_end = Some(record.get_end());
-		}
-
-		last_end = None;
-		for record in &self.reverse_strand_records {
-			reverse_max = max(reverse_max, record.get_end());
-
-			if let Some(end) = last_end {
-				let gap_length = record.get_start() as i64 - end as i64;
-				calculation_map.add_entry(gap_length);
-			}
-
-			last_end = Some(record.get_end());
-		}
-
-		let forward_gap = ref_length - forward_max;
-		let reverse_gap = ref_length - reverse_max;
-
-		let end_gap = forward_gap + reverse_gap;
-
-		calculation_map.add_entry(end_gap as i64);
+		self.calculate_gap_lengths_into_map(&calculation_map);
 
 		calculation_map.into()
 	}
 
-	pub fn calculate_gap_lengths_into_map(&self, ref_length: u32, calculation_map: &CalculationFrequencyMap<i64>) {
-		let mut forward_max = 0u32;
-		let mut reverse_max = 0u32;
+	pub fn calculate_gap_lengths_into_map(&self, calculation_map: &CalculationFrequencyMap<i64>) {
+		let mut forward_index = 0usize;
+		let mut reverse_index = 0usize;
 
 		let mut last_end = None;
-		for record in &self.forward_strand_records {
-			forward_max = max(forward_max, record.get_end());
+
+		while forward_index < self.forward_strand_records.len() && reverse_index < self.reverse_strand_records.len() {
+			let forward = &self.forward_strand_records[forward_index];
+			let reverse = &self.reverse_strand_records[reverse_index];
+
+			let current: &PresentationRecord;
+
+			if forward.get_start() <= reverse.get_start() {
+				current = forward;
+				forward_index += 1;
+			}
+			else {
+				current = reverse;
+				reverse_index += 1;
+			}
 
 			if let Some(end) = last_end {
-				let gap_length = record.get_start() as i64 - end as i64;
+				let gap_length = current.get_start() as i64 - end as i64;
 				calculation_map.add_entry(gap_length);
 			}
 
-			last_end = Some(record.get_end());
+			last_end = Some(current.get_end());
 		}
 
-		last_end = None;
-		for record in &self.reverse_strand_records {
-			reverse_max = max(reverse_max, record.get_end());
+		while forward_index < self.forward_strand_records.len() {
+			let current = &self.forward_strand_records[forward_index];
 
 			if let Some(end) = last_end {
-				let gap_length = record.get_start() as i64 - end as i64;
+				let gap_length = current.get_start() as i64 - end as i64;
 				calculation_map.add_entry(gap_length);
 			}
 
-			last_end = Some(record.get_end());
+			last_end = Some(current.get_end());
 		}
 
-		let forward_gap = ref_length - forward_max;
-		let reverse_gap = ref_length - reverse_max;
+		while reverse_index < self.reverse_strand_records.len() {
+			let current = &self.reverse_strand_records[reverse_index];
 
-		let end_gap = forward_gap + reverse_gap;
+			if let Some(end) = last_end {
+				let gap_length = current.get_start() as i64 - end as i64;
+				calculation_map.add_entry(gap_length);
+			}
 
-		calculation_map.add_entry(end_gap as i64);
+			last_end = Some(current.get_end());
+		}
 	}
 
 	pub fn get_split_count(&self, include_unmapped: bool) -> usize {
@@ -104,7 +88,7 @@ impl SplitRead {
 		}
 	}
 
-	pub fn get_total_length(&self, wrap: Option<u32>) -> u32 {
+	pub fn get_total_length(&self) -> u32 {
 		let forward_min = self.forward_strand_records
 		                      .get(0)
 		                      .map(|record| record.get_start())
@@ -125,26 +109,10 @@ impl SplitRead {
 			reverse_max = max(reverse_max, record.get_end());
 		}
 
-		return match wrap {
-			None => {
-				let min = min(forward_min, reverse_min);
-				let max = max(forward_max, reverse_max);
+		let min = min(forward_min, reverse_min);
+		let max = max(forward_max, reverse_max);
 
-				max - min
-			}
-			Some(ref_len) => {
-				let forward_length = forward_max - forward_min;
-				let reverse_length = reverse_max - reverse_min;
-
-				let wrap_forward_length = ref_len - forward_max;
-				let wrap_reverse_length = ref_len - reverse_max;
-
-				forward_length +
-					wrap_forward_length +
-					wrap_reverse_length +
-					reverse_length
-			}
-		};
+		max - min
 	}
 
 	pub fn get_statistics(&self, ref_length: u32) -> (PresentationFrequencyMap<i64>, u64, usize, usize) {

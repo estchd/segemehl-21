@@ -68,7 +68,7 @@ impl SplitReadPerReferencePresentationData {
 		)
 	}
 
-	pub fn from_calculation_data(value: SplitReadPerReferenceCalculationData, ref_length: u32, mpb: &MultiProgress) -> Result<Self,()> {
+	pub fn from_calculation_data(value: SplitReadPerReferenceCalculationData, mpb: &MultiProgress) -> Result<Self,()> {
 		let pb = mpb.add(ProgressBar::new(4));
 		pb.set_message("Converting Calculation Data...");
 		pb.set_prefix("[1/4]");
@@ -115,7 +115,7 @@ impl SplitReadPerReferencePresentationData {
 		(&split_reads)
 			.into_par_iter()
 			.for_each(|assembler| {
-				assembler.calculate_gap_lengths_into_map(ref_length, &gap_length_map);
+				assembler.calculate_gap_lengths_into_map(&gap_length_map);
 
 				let current_count = calculated_count.fetch_add(1, Ordering::Relaxed);
 
@@ -146,7 +146,7 @@ impl SplitReadPerReferencePresentationData {
 			.into_par_iter()
 			.for_each(
 				|assembler| {
-				assembler_length_map.add_entry(assembler.get_total_length(Some(ref_length)));
+				assembler_length_map.add_entry(assembler.get_total_length());
 				split_count_map.add_entry(assembler.get_split_count(false));
 				split_count_unmapped_map.add_entry(assembler.get_split_count(true));
 
