@@ -74,7 +74,7 @@ impl CommandLineParameters {
         let output_path = matches.value_of("output_path").map(|item| String::from(item))
             .unwrap_or("statistics.json".to_string());
         let expected_record_count = matches.value_of("expected_record_count")
-            .map(|item| item.parse::<usize>().unwrap());
+            .map(|item| item.trim().parse::<usize>().unwrap());
         let bin_size = matches.value_of("bin_size")
                 .map(|item| item.parse::<u32>().unwrap())
                 .map(|item| NonZeroU32::new(item).unwrap());
@@ -93,13 +93,13 @@ impl CommandLineParameters {
 }
 
 fn number_validator(value: String) -> Result<(),String> {
-    value.parse::<usize>()
+    value.trim().parse::<usize>()
         .map(|_| ())
         .map_err(|err| format!("{}", err))
 }
 
 fn non_zero_number_validator(value: String) -> Result<(), String> {
-    let number = value.parse::<u32>()
+    let number = value.trim().parse::<u32>()
         .map_err(|err| format!("{}", err))?;
 
     NonZeroU32::new(number)
