@@ -191,12 +191,6 @@ pub fn calculate_boxplot_from_histogram(mut histogram: Histogram) -> BoxPlotEntr
 
 	let q3_calculated = calculate_quartile(&mut histogram, q2_calculated.new_index, q2_calculated.new_last, quartile_positions.q3);
 
-	if let Some(quartile) = &q3_calculated {
-		if quartile.quartile > max {
-			console_log!("{:?}", &histogram);
-		}
-	}
-
 	return BoxPlotEntry {
 		min,
 		q1: q1_calculated.quartile,

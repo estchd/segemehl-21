@@ -1,15 +1,15 @@
-import {stat} from "copy-webpack-plugin/dist/utils/promisify";
 import {rebuild_numeric_statistics} from "./numeric_statistics";
 import {update_all_plots} from "./plots";
 import {
     add_file,
-    get_reference_list,
+    complete_file,
     get_file_list,
-    generate_per_file_stats,
-    process_file,
+    get_per_file_stats,
+    has_file,
     remove_file,
-    setup_file_list, update_file_color
-} from "./wasm_binding";
+    update_file_color
+} from "./file_storage";
+import {check_references, get_reference_names, has_references, setup_chromosome_list} from "./reference_list";
 
 const file_input = document.getElementById("file_input");
 const file_dropdown = document.getElementById("file-dropdown");
@@ -22,11 +22,20 @@ const add_button_template = document.getElementById("file-dropdown-add-button-te
 const remove_button_template = document.getElementById("file-dropdown-remove-button-template");
 const loading_status_template = document.getElementById("file-dropdown-loading-status-template");
 
-export async function setup_file_system()
+let background_worker;
+
+export function setup_file_system()
 {
-    setup_file_list();
-    await rebuild_file_list();
+    setup_chromosome_list();
+    setup_background_worker(handle_process_file_completion, handle_process_file_fail);
+    rebuild_file_list();
     file_input.addEventListener("change", () => handle_file_input_change());
+}
+
+function setup_background_worker() {
+    background_worker = new Worker("./worker.js");
+    background_worker.addEventListener("message", (e) => handle_worker_message(e));
+    background_worker.postMessage({files:[]});
 }
 
 function handle_add_file_button_click() {
@@ -34,64 +43,107 @@ function handle_add_file_button_click() {
 }
 
 async function handle_file_input_change() {
-    let promises = [];
+    let files = file_input.files;
+    let added_files = [];
 
-    for (const file of file_input.files) {
-        const name = file.name;
+     for (const file of files) {
+         const name = file.name;
 
-        let files = get_file_list();
-        if (files.includes(name)) {
-            continue;
-        }
+         if (has_file(name)) {
+             continue;
+         }
 
-        let color = getRandomColors();
+         let colors = get_random_colors();
 
-        add_file(file, color);
-        let promise = process_file(file)
-            .then(() => handle_process_file_completion())
-            .catch((err) => handle_process_file_fail(err));
+         add_file(name,colors);
+         added_files.push(file);
+     }
 
-        promises.push(promise);
+     let promises = [];
+     for (const file of added_files) {
+         promises.push(file.arrayBuffer());
+     }
+
+     let array_buffers = await Promise.all(promises);
+
+     let processed_files = [];
+     for (let i = 0; i < added_files.length; i++) {
+        let file = added_files[i];
+        let array_buffer = array_buffers[i];
+
+        processed_files.push({name: file.name, buffer: array_buffer});
+     }
+
+     background_worker.postMessage(
+         {
+            files: processed_files
+         },
+         array_buffers
+     );
+
+     rebuild_file_list();
+     update_all_plots();
+}
+
+function handle_worker_message(message) {
+    let data = message.data;
+
+    let type = data.type;
+
+    switch(type) {
+        case "success":
+            handle_process_file_completion(data.files);
+            break;
+        case "error":
+            handle_process_file_fail(data.files);
+            break;
     }
-    promises.push(rebuild_file_list());
+}
+
+function handle_process_file_completion(files) {
+    for (const file of files) {
+        let name = file.name;
+        let stats = file.stats;
+        let data = file.data;
+        let references = file.references;
+
+        if (has_references() && !check_references(references)) {
+            remove_file(name);
+        }
+        else {
+            complete_file(name, stats, data, references);
+        }
+    }
+
+    rebuild_file_list();
     update_all_plots();
-
-    await Promise.all(promises);
 }
 
-async function handle_process_file_completion() {
+function handle_process_file_fail(files) {
 
-    let promises = [];
+    for (const file in files) {
 
-    promises.push(rebuild_file_list());
+        console.error("file promise failed for file " + file.name);
+        console.error("Err: " + file.err);
+
+        remove_file(file.name);
+    }
+
+    rebuild_file_list();
     update_all_plots();
-
-    await Promise.all(promises);
 }
 
-async function handle_process_file_fail(err) {
-    console.log("file promise failed");
-    console.error("Err: " + err);
-
-    let promises = [];
-
-    promises.push(rebuild_file_list());
-    promises.push(update_all_plots());
-
-    await Promise.all(promises);
-}
-
-async function handle_remove_file_click(file_name) {
+function handle_remove_file_click(file_name) {
     remove_file(file_name);
-    await rebuild_file_list();
+    rebuild_file_list();
 }
 
-async function handle_file_color_change(file_name, new_color, index) {
+function handle_file_color_change(file_name, new_color, index) {
     update_file_color(file_name, new_color, index);
-    await update_all_plots();
+    update_all_plots();
 }
 
-async function rebuild_file_list() {
+function rebuild_file_list() {
     clear_dropdown();
 
     let files = get_file_list();
@@ -117,7 +169,7 @@ async function rebuild_file_list() {
     rebuild_chromosome_list();
 
     rebuild_statistic_display();
-    await update_all_plots();
+    update_all_plots();
 }
 
 function rebuild_statistic_display() {
@@ -129,7 +181,7 @@ function rebuild_statistic_display() {
     for (const file_name of files) {
         if (!file_name[2]) {continue;}
 
-        let statistics = generate_per_file_stats(file_name[0]);
+        let statistics = get_per_file_stats(file_name[0]);
 
         if (!statistics) { continue; }
 
@@ -143,7 +195,7 @@ function rebuild_statistic_display() {
 function rebuild_chromosome_list() {
     clear_chromosome_select();
 
-    let chromosome_list = get_reference_list();
+    let chromosome_list = get_reference_names();
 
     for (const chromosome of chromosome_list) {
         let item = clone_chromosome_select_item(chromosome);
@@ -268,7 +320,7 @@ function clone_loading_status() {
     return loading_status_template.content.firstElementChild.cloneNode(true);
 }
 
-function getRandomColors() {
+export function get_random_colors() {
     let random_hue = Math.random();
 
     let main_saturation = 1.0;

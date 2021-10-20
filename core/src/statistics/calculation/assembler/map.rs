@@ -3,10 +3,11 @@ use std::sync::{Mutex, RwLock};
 
 use bam::Record;
 use crate::util::get_record_name_as_string;
+use crate::util::record_to_sam;
 
 #[derive(Debug)]
 pub struct CalculationAssemblerMap {
-    pub(crate) map: RwLock<HashMap<u32, RwLock<HashMap<String, Mutex<Record>>>>>,
+    pub(crate) map: RwLock<HashMap<u32, RwLock<HashMap<String, Mutex<Vec<Record>>>>>>,
     pub(crate) starts: Mutex<Vec<Record>>
 }
 
@@ -35,7 +36,19 @@ impl CalculationAssemblerMap {
             let record_name = get_record_name_as_string(&record);
 
             if pos_records_lock.contains_key(&record_name) {
-                println!("WARN: More than one Split Record at start position {} with name {}", start, &record_name);
+                let mutex = pos_records_lock.get(&record_name).unwrap();
+                let mut lock = mutex.lock().unwrap();
+
+                println!();
+                println!();
+                println!("Multiple records at same position {}, with same name {}:", start, record_name);
+
+                for record in lock.iter() {
+                    println!("{}", record_to_sam(record));
+                }
+                println!("{}", record_to_sam(&record));
+
+                lock.push(record);
             }
             else {
                 drop(pos_records_lock);
@@ -58,7 +71,19 @@ impl CalculationAssemblerMap {
             let record_name = get_record_name_as_string(&record);
 
             if pos_records_lock.contains_key(&record_name) {
-                println!("WARN: More than one Split Record at start position {} with name {}", start, &record_name);
+                let mutex = pos_records_lock.get(&record_name).unwrap();
+                let mut lock = mutex.lock().unwrap();
+
+                println!();
+                println!();
+                println!("Multiple records at same position {}, with same name {}:", start, record_name);
+
+                for record in lock.iter() {
+                    println!("{}", record_to_sam(record));
+                }
+                println!("{}", record_to_sam(&record));
+
+                lock.push(record);
             }
             else {
                 drop(pos_records_lock);
@@ -66,26 +91,40 @@ impl CalculationAssemblerMap {
             }
         }
         else {
-            let mut hash_map = HashMap::<String, Mutex<Record>>::new();
+            let mut hash_map = HashMap::<String, Mutex<Vec<Record>>>::new();
 
             let name = get_record_name_as_string(&record);
 
-            hash_map.insert(name, Mutex::new(record));
+            hash_map.insert(name, Mutex::new(vec![record]));
 
             write_lock.insert(start, RwLock::new(hash_map));
         }
     }
 
-    fn insert_new_pos_records(record: Record, pos_records: &RwLock<HashMap<String, Mutex<Record>>>) {
+    fn insert_new_pos_records(record: Record, pos_records: &RwLock<HashMap<String, Mutex<Vec<Record>>>>) {
         let mut write_lock = pos_records.write().unwrap();
 
         let name = get_record_name_as_string(&record);
 
         if write_lock.contains_key(&name) {
-            println!("WARN: More than one Split Record at start position {} with name {}", record.start(), &name);
+            let mutex = write_lock.get_mut(&name).unwrap();
+            let mut vec_lock = mutex.lock().unwrap();
+
+            let start = record.start();
+
+            println!();
+            println!();
+            println!("Multiple records at same position {}, with same name {}:", start, name);
+
+            for record in vec_lock.iter() {
+                println!("{}", record_to_sam(record));
+            }
+            println!("{}", record_to_sam(&record));
+
+            vec_lock.push(record);
         }
         else {
-            write_lock.insert(name, Mutex::new(record));
+            write_lock.insert(name, Mutex::new(vec![record]));
         }
     }
 }

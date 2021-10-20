@@ -1,12 +1,13 @@
-import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
+import {get_reference_names} from "../reference_list";
+import {get_dataset, get_file_list} from "../file_storage";
 
 export function setup_reference_plots() {
     setup_reference_length_plot();
 }
 
 export function update_reference_plots() {
-    reference_names = get_reference_list();
+    reference_names = get_reference_names();
 
     update_reference_length_plot();
 }

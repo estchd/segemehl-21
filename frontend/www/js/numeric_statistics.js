@@ -1,6 +1,3 @@
-//Table Rows
-import {stat} from "copy-webpack-plugin/dist/utils/promisify";
-
 const per_file_file_row = document.getElementById("numeric-statistics-per-file-file-row");
 
 const number_of_reads_row = document.getElementById("numeric-statistics-number-of-reads-row");

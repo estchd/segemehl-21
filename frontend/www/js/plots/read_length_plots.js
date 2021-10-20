@@ -1,6 +1,7 @@
-import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
 import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
+import {get_dataset, get_file_list} from "../file_storage";
+import {get_reference_names} from "../reference_list";
 
 export function setup_read_length_plots() {
     setup_read_length_sequence_file();
@@ -10,7 +11,7 @@ export function setup_read_length_plots() {
 }
 
 export function update_read_length_plots() {
-    reference_names = get_reference_list();
+    reference_names = get_reference_names();
 
     update_read_length_sequence_file();
     update_read_length_sequence_per_reference();

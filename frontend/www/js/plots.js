@@ -1,4 +1,3 @@
-import {get_reference_list, get_dataset, get_file_list} from "./wasm_binding";
 import {
     setup_coverage_plots,
     update_reference_dependent_coverage_plots,
@@ -31,7 +30,7 @@ import {
     update_split_read_plots
 } from "./plots/split_read_plots";
 import {setup_test_plots, update_reference_dependent_test_plots, update_test_plot} from "./plots/test_plots";
-
+import {get_reference_names} from "./reference_list";
 
 export function setup_plots() {
     setup_test_plots();
@@ -81,7 +80,7 @@ export function linking_update_selected_reference(element) {
 
     let index = element.index || element._index;
 
-    let reference_names = get_reference_list();
+    let reference_names = get_reference_names();
     if (reference_names[index]) {
         selected_chromosome.value = reference_names[index];
     }

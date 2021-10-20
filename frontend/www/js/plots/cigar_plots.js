@@ -1,6 +1,7 @@
-import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
 import {bin_data_to_line_data, calculate_decimation_size, decimate_bin_data_mean, generate_labels} from "./line_plot";
+import {get_reference_names} from "../reference_list";
+import {get_dataset, get_file_list} from "../file_storage";
 
 export function setup_cigar_plots() {
     setup_cigar_total_file_plot();
@@ -12,7 +13,7 @@ export function setup_cigar_plots() {
 }
 
 export function update_cigar_plots() {
-    reference_names = get_reference_list();
+    reference_names = get_reference_names();
 
     update_cigar_total_file_plot();
     update_cigar_total_per_reference_plot();
