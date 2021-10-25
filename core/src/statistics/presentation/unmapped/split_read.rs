@@ -33,7 +33,15 @@ impl TryFrom<UnmappedSplitReadCalculationData> for UnmappedSplitReadPresentation
 
         for records in assembler_iter {
             for (_,record) in records {
-                map.add_entry(get_record_length_on_reference(&record.lock().unwrap()));
+                let lock = record.lock().unwrap();
+                if lock.len() > 1 {
+                    println!("Multiple entries at same position with same name: ");
+                    for record in lock.iter() {
+                        println!("{:?}", record);
+                    }
+                }
+
+                map.add_entry(get_record_length_on_reference(lock.get(0).unwrap()));
             }
         }
 

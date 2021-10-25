@@ -1,6 +1,7 @@
-import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {linking_update_selected_reference} from "../plots";
 import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
+import {get_reference_names} from "../reference_list";
+import {get_dataset, get_file_list} from "../file_storage";
 
 export function setup_split_read_plots() {
     setup_gap_lengths_file_plot();
@@ -12,7 +13,7 @@ export function setup_split_read_plots() {
 }
 
 export function update_split_read_plots() {
-    reference_names = get_reference_list();
+    reference_names = get_reference_names();
 
     update_gap_lengths_file_plot();
     update_gap_lengths_per_reference_plot();

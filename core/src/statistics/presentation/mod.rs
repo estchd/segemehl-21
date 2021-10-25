@@ -189,6 +189,122 @@ impl PresentationData {
 
         read_count_map.get_max_frequency().unwrap_or((0,0)).0
     }
+
+    pub fn get_median_coverage(&self) -> f64 {
+        let total_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_read_length_on_reference_map())
+            .map(|item| item.get_frequency_sum())
+            .map(|item| item as f64).collect();
+
+        let reference_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_reference_length())
+            .map(|item| item as f64).collect();
+
+        let coverage_data: Vec<f64> = total_length_data.iter()
+            .zip(reference_length_data.iter())
+            .map(|(total_length, reference_length)| {
+                *total_length / *reference_length
+            })
+            .collect();
+
+        let min_coverage = coverage_data.iter().reduce(|a,b| {
+            if *a >= *b {
+                b
+            }
+            else {
+                a
+            }
+        }).map(|item| *item).unwrap_or(0.0);
+
+        let max_coverage = coverage_data.iter().reduce(|a,b| {
+            if *a >= *b {
+                a
+            }
+            else {
+                b
+            }
+        }).map(|item| *item).unwrap_or(0.0);
+
+        return (min_coverage + max_coverage) / 2.0;
+    }
+
+    pub fn get_mean_coverage(&self) -> f64 {
+        let total_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_read_length_on_reference_map())
+            .map(|item| item.get_frequency_sum())
+            .map(|item| item as f64).collect();
+
+        let reference_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_reference_length())
+            .map(|item| item as f64).collect();
+
+        let coverage_data: Vec<f64> = total_length_data.iter()
+            .zip(reference_length_data.iter())
+            .map(|(total_length, reference_length)| {
+                *total_length / *reference_length
+            })
+            .collect();
+
+        let reference_count = self.per_reference.len();
+
+        let sum: f64 = coverage_data.iter().sum();
+
+        return sum / reference_count as f64;
+    }
+
+    pub fn get_least_coverage(&self) -> f64 {
+        let total_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_read_length_on_reference_map())
+            .map(|item| item.get_frequency_sum())
+            .map(|item| item as f64).collect();
+
+        let reference_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_reference_length())
+            .map(|item| item as f64).collect();
+
+        let coverage_data: Vec<f64> = total_length_data.iter()
+            .zip(reference_length_data.iter())
+            .map(|(total_length, reference_length)| {
+                *total_length / *reference_length
+            })
+            .collect();
+
+        coverage_data.iter().reduce(|a,b| {
+            if *a >= *b {
+                b
+            }
+            else {
+                a
+            }
+        }).map(|item| *item).unwrap_or(0.0)
+    }
+
+    pub fn get_most_coverage(&self) -> f64 {
+        let total_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_read_length_on_reference_map())
+            .map(|item| item.get_frequency_sum())
+            .map(|item| item as f64).collect();
+
+        let reference_length_data: Vec<f64> = self.get_per_reference_data()
+            .map(|item| item.get_reference_length())
+            .map(|item| item as f64).collect();
+
+        let coverage_data: Vec<f64> = total_length_data.iter()
+            .zip(reference_length_data.iter())
+            .map(|(total_length, reference_length)| {
+                *total_length / *reference_length
+            })
+            .collect();
+
+        coverage_data.iter().reduce(|a,b| {
+            if *a >= *b {
+                a
+            }
+            else {
+                b
+            }
+        }).map(|item| *item).unwrap_or(0.0)
+    }
 }
 
 impl TryFrom<CalculationData> for PresentationData {

@@ -55,6 +55,11 @@ pub struct PerFileStatistics {
     pub mean_length_of_chromosomes: f64,
     pub shortest_chromosome_length: u32,
     pub longest_chromosome_length: u32,
+
+    pub median_chromosome_coverage: f64,
+    pub mean_chromosome_coverage: f64,
+    pub least_chromosome_coverage: f64,
+    pub most_chromosome_coverage: f64
 }
 
 #[wasm_bindgen]
@@ -149,6 +154,10 @@ fn generate_per_file_stats(statistics: &PresentationData) -> PerFileStatistics {
         mean_length_of_chromosomes,
         shortest_chromosome_length,
         longest_chromosome_length,
+        median_chromosome_coverage: statistics.get_median_coverage(),
+        mean_chromosome_coverage: statistics.get_mean_coverage(),
+        least_chromosome_coverage: statistics.get_least_coverage(),
+        most_chromosome_coverage: statistics.get_most_coverage()
     };
 
     return statistics;

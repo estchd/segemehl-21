@@ -3,6 +3,7 @@ use bam::Record;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use bam::record::cigar::{Operation, CigarIter};
 use std::iter::{Peekable, Rev};
+use std::io::BufWriter;
 
 pub fn length(start: u32, end: u32) -> u32 {
 	if end < start {
@@ -280,6 +281,41 @@ impl<'a> CigarMaxLengthIter<'a> {
 
 		collection
 	}
+}
+
+
+pub fn record_to_sam(record: &Record) -> String {
+	let q_name = String::from_utf8_lossy(record.name()).to_string();
+	let flag = record.flag().0;
+	let r_name = record.ref_id();
+	let pos = record.start();
+	let map_q = record.mapq();
+	let cigar = record.cigar();
+	let r_next = record.mate_ref_id();
+	let p_next = record.mate_start();
+	let t_len = record.template_len();
+	let mut seq = BufWriter::new(Vec::new());
+	record.sequence().write_readable(&mut seq).unwrap();
+	let seq = seq.into_inner().unwrap();
+	let seq = String::from_utf8(seq).unwrap();
+	let mut qual = BufWriter::new(Vec::new());
+	record.qualities().write_readable(&mut qual).unwrap();
+	let qual = qual.into_inner().unwrap();
+	let qual = String::from_utf8(qual).unwrap();
+
+	format!("{} {} {} {} {} {} {} {} {} {} {}",
+	        q_name,
+	        flag,
+	        r_name,
+	        pos,
+	        map_q,
+	        cigar,
+	        r_next,
+	        p_next,
+	        t_len,
+	        seq,
+	        qual
+	)
 }
 
 #[cfg(test)]

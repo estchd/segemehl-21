@@ -1,5 +1,6 @@
-import {get_dataset, get_file_list, get_reference_list} from "../wasm_binding";
 import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
+import {get_reference_names} from "../reference_list";
+import {get_dataset, get_file_list} from "../file_storage";
 
 export function setup_unmapped_plots() {
     setup_unmapped_read_count_plot();
@@ -8,7 +9,7 @@ export function setup_unmapped_plots() {
 }
 
 export function update_unmapped_plots() {
-    reference_names = get_reference_list();
+    reference_names = get_reference_names();
 
     update_unmapped_read_count_plot();
     update_unmapped_read_percentage_plot();

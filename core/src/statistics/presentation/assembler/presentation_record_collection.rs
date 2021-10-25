@@ -36,7 +36,7 @@ impl From<CalculationAssemblerMap> for PresentationRecordCollection {
 		             })
 					 .map(|(key, value)| {
 						 (key, value.into_iter()
-							.map(|(key, value)| (key, value.into_inner().unwrap().into()))
+							.map(|(key, value)| (key, value.into_inner().unwrap().get(0).unwrap().clone().into()))
 							.collect())
 					 })
 		             .collect();
