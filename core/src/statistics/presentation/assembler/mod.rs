@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::convert::TryFrom;
 
 use crate::statistics::presentation::record::PresentationRecord;
 
@@ -6,59 +7,42 @@ pub mod collection;
 pub mod presentation_record_collection;
 
 pub struct PresentationAssembler {
-    records: Vec<PresentationRecord>
+    pub(crate) template_length_map: HashMap<i32, Vec<PresentationRecord>>
 }
 
-impl PresentationAssembler {
-    pub fn inner(&self) -> &Vec<PresentationRecord> {
-        &self.records
-    }
+impl TryFrom<Vec<PresentationRecord>> for PresentationAssembler {
+    type Error = ();
 
-    pub fn into_inner(self) -> Vec<PresentationRecord> {
-        self.records
-    }
+    fn try_from(value: Vec<PresentationRecord>) -> Result<Self, Self::Error> {
+        let mut template_name: Option<String> = None;
 
-    pub fn try_from_start_record_with_map(start_record: PresentationRecord, map: &HashMap<u32, HashMap<String,PresentationRecord>>) -> Result<Self,()> {
-        let name = start_record.get_name();
+        let mut template_length_map: HashMap<i32, Vec<PresentationRecord>> = HashMap::new();
 
-        let mut records = Vec::<PresentationRecord>::new();
+        for record in value {
+            let name = record.get_name();
 
-        records.push(start_record.clone());
-
-        let mut current_record = start_record;
-
-        loop {
-            if current_record.get_flags().get_is_last_mate() {
-                records.push(current_record);
-                break;
+            match &template_name {
+                None => { template_name = Some(name) }
+                Some(current) => {
+                    if current != &name {
+                        return Err(())
+                    }
+                }
             }
 
-            let p_next = current_record.get_p_next();
+            let template_length = record.get_template_length();
 
-            if p_next == -1 {
-                return Err(());
+            if template_length_map.contains_key(&template_length) {
+                let vec = template_length_map.get_mut(&template_length).unwrap();
+                vec.push(record);
             }
-
-            let next = map.get(&(p_next as u32));
-
-            if let None = next {
-                return Err(());
+            else {
+                template_length_map.insert(template_length, vec![record]);
             }
-
-            let next = next.unwrap();
-
-            if !next.contains_key(&name) {
-                return Err(());
-            }
-
-            let next = next.get(&name).unwrap().clone();
-
-            records.push(current_record);
-            current_record = next;
         }
 
-        return Ok(PresentationAssembler {
-            records
+        Ok(Self {
+            template_length_map
         })
     }
 }

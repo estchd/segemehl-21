@@ -3,11 +3,11 @@ use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::record::PresentationRecord;
 use serde_derive::{Serialize,Deserialize};
-use crate::statistics::presentation::assembler::PresentationAssembler;
 
 pub mod collection;
+pub mod statistics;
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplitRead {
 	forward_strand_records: Vec<PresentationRecord>,
 	reverse_strand_records: Vec<PresentationRecord>,
@@ -115,75 +115,18 @@ impl SplitRead {
 		max - min
 	}
 
-	pub fn get_statistics(&self, ref_length: u32) -> (PresentationFrequencyMap<i64>, u64, usize, usize) {
-		let calculation_map = CalculationFrequencyMap::new();
+	pub fn get_statistics(&self) -> (PresentationFrequencyMap<i64>, u32, usize, usize) {
+		let gap_length_map = self.get_gap_length_map();
+		let split_count = self.get_split_count(false);
+		let split_count_unmapped = self.get_split_count(true);
+		let total_length = self.get_total_length();
 
-		let forward_split_count = self.forward_strand_records.len();
-		let reverse_split_count = self.reverse_strand_records.len();
-
-		let split_count = forward_split_count + reverse_split_count;
-		let split_count_unmapped = forward_split_count + reverse_split_count + self.unmapped_records.len();
-
-		let mut forward_max = 0u32;
-		let mut reverse_max = 0u32;
-
-		let forward_min = self.forward_strand_records
-		                      .get(0)
-		                      .map(|record| record.get_start())
-		                      .unwrap_or(0);
-		let reverse_min = self.reverse_strand_records
-		                      .get(0)
-		                      .map(|record| record.get_start())
-		                      .unwrap_or(0);
-
-		let mut last_end = None;
-		for record in &self.forward_strand_records {
-			forward_max = max(forward_max, record.get_end());
-
-			if let Some(end) = last_end {
-				let gap_length = record.get_start() as i64 - end as i64;
-				calculation_map.add_entry(gap_length);
-			}
-
-			last_end = Some(record.get_end());
-		}
-
-		last_end = None;
-		for record in &self.reverse_strand_records {
-			reverse_max = max(reverse_max, record.get_end());
-
-			if let Some(end) = last_end {
-				let gap_length = record.get_start() as i64 - end as i64;
-				calculation_map.add_entry(gap_length);
-			}
-
-			last_end = Some(record.get_end());
-		}
-
-		let forward_gap = ref_length - forward_max;
-		let reverse_gap = ref_length - reverse_max;
-
-		let end_gap = forward_gap as u64 + reverse_gap as u64;
-
-		calculation_map.add_entry(end_gap as i64);
-
-		let forward_length = forward_max - forward_min;
-		let reverse_length = reverse_max - reverse_min;
-
-		let total_length =
-			forward_length as u64 +
-				forward_gap as u64 +
-				reverse_gap as u64 +
-				reverse_length as u64;
-
-		(calculation_map.into(), total_length, split_count, split_count_unmapped)
+		(gap_length_map, total_length, split_count, split_count_unmapped)
 	}
 }
 
-impl From<PresentationAssembler> for SplitRead {
-	fn from(assembler: PresentationAssembler) -> Self {
-		let associated_records = assembler.into_inner();
-
+impl From<Vec<PresentationRecord>> for SplitRead {
+	fn from(associated_records: Vec<PresentationRecord>) -> Self {
 		let mut forward_strand_records: Vec<PresentationRecord> = Vec::new();
 		let mut reverse_strand_records: Vec<PresentationRecord> = Vec::new();
 		let mut unmapped_records: Vec<PresentationRecord> = Vec::new();

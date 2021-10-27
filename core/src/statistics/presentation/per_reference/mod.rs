@@ -1,11 +1,9 @@
 pub mod single_read;
-pub mod split_read;
 
 use serde_derive::{Deserialize, Serialize};
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::per_reference::single_read::SingleReadPerReferencePresentationData;
 use crate::statistics::calculation::per_reference::PerReferenceCalculationData;
-use crate::statistics::presentation::per_reference::split_read::SplitReadPerReferencePresentationData;
 use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use crate::statistics::presentation::binned::map::BinnedStatisticsPresentationMap;
 use crate::statistics::presentation::cigar_operations::CigarOperations;
@@ -16,7 +14,7 @@ pub struct PerReferencePresentationData {
     reference_name: String,
     reference_length: u32,
     single_read_data: SingleReadPerReferencePresentationData,
-    split_read_data: SplitReadPerReferencePresentationData
+    split_read_data: SingleReadPerReferencePresentationData
 }
 
 impl PerReferencePresentationData {
@@ -32,7 +30,7 @@ impl PerReferencePresentationData {
         &self.single_read_data
     }
 
-    pub fn get_split_read_data(&self) -> &SplitReadPerReferencePresentationData {
+    pub fn get_split_read_data(&self) -> &SingleReadPerReferencePresentationData {
         &self.split_read_data
     }
 
@@ -107,7 +105,7 @@ impl PerReferencePresentationData {
             .progress_chars("#>-")
             .tick_chars("/-\\|"));
 
-        let split_read_data = SplitReadPerReferencePresentationData::from_calculation_data(value.split_read_data, mpb)?;
+        let split_read_data = value.split_read_data.into();
 
         pb.finish_with_message("Completed, waiting...");
 

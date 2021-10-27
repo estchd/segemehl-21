@@ -5,6 +5,7 @@ use per_reference::PerReferenceCalculationData;
 
 use crate::header::Header;
 use binned::BinConfig;
+use crate::statistics::calculation::assembler::map::CalculationAssemblerMap;
 use crate::statistics::calculation::unmapped::UnmappedCalculationData;
 use crate::statistics::shared::meta::Meta;
 
@@ -17,6 +18,7 @@ pub mod frequency_map;
 #[derive(Debug)]
 pub struct CalculationData {
     pub(crate) unmapped: UnmappedCalculationData,
+    pub(crate) split_read: CalculationAssemblerMap,
     pub(crate) per_reference: Vec<PerReferenceCalculationData>,
     pub(crate) meta: Meta
 }
@@ -24,6 +26,7 @@ pub struct CalculationData {
 impl CalculationData {
     pub fn new(header: &Header, bin_size: NonZeroU32) -> Result<Self, ()> {
         let unmapped = UnmappedCalculationData::new();
+        let split_read = CalculationAssemblerMap::new();
         let mut per_reference = Vec::new();
 
         for ref_sequence in header.reference_sequences.iter() {
@@ -33,6 +36,7 @@ impl CalculationData {
 
         Ok(Self {
             unmapped,
+            split_read,
             per_reference,
             meta: Meta {
                 bin_size
@@ -42,6 +46,11 @@ impl CalculationData {
 
     pub fn add_record(&self, record: Record) -> Result<(),()> {
         let is_mapped = record.flag().is_mapped();
+        let is_split = record.flag().is_paired();
+
+        if is_split {
+            self.split_read.add_record(record.clone());
+        }
 
         if is_mapped {
             self.add_mapped_record(record)

@@ -4,9 +4,13 @@ use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde_derive::{Deserialize, Serialize};
 
 use crate::statistics::calculation::CalculationData;
+use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
+use crate::statistics::presentation::assembler::presentation_record_collection::PresentationRecordCollection;
 use crate::statistics::presentation::cigar_operations::CigarOperations;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::per_reference::PerReferencePresentationData;
+use crate::statistics::presentation::split_read::collection::SplitReadCollection;
+use crate::statistics::presentation::split_read::statistics::SplitReadStatistics;
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
 use crate::statistics::shared::meta::Meta;
 use crate::util::get_quality_frequency_map;
@@ -24,6 +28,7 @@ pub mod split_read;
 pub struct PresentationData {
     per_reference: Vec<PerReferencePresentationData>,
     unmapped: UnmappedPresentationData,
+    split_read: SplitReadStatistics,
     meta: Meta,
 }
 
@@ -60,39 +65,19 @@ impl PresentationData {
     }
 
     pub fn get_assembler_length_map(&self) -> PresentationFrequencyMap<u32> {
-        self.per_reference.iter()
-            .map(|item| item.get_split_read_data().get_assembler_length_map())
-            .fold(PresentationFrequencyMap::new(),
-                  |a, b|
-                    PresentationFrequencyMap::merge(&a,&b)
-            )
+        self.split_read.get_total_length_map().clone()
     }
 
     pub fn get_gap_length_map(&self) -> PresentationFrequencyMap<i64> {
-        self.per_reference.iter()
-            .map(|item| item.get_split_read_data().get_gap_length_map())
-            .fold(PresentationFrequencyMap::new(),
-                  |a,b|
-                      PresentationFrequencyMap::merge(&a,&b)
-            )
+        self.split_read.get_gap_length_map().clone()
     }
 
     pub fn get_split_count_map(&self) -> PresentationFrequencyMap<usize> {
-        self.per_reference.iter()
-            .map(|item| item.get_split_read_data().get_split_count_map())
-            .fold(PresentationFrequencyMap::new(),
-                  |a,b|
-                PresentationFrequencyMap::merge(&a,&b)
-            )
+        self.split_read.get_split_count_map().clone()
     }
 
     pub fn get_split_count_unmapped_map(&self) -> PresentationFrequencyMap<usize> {
-        self.per_reference.iter()
-            .map(|item| item.get_split_read_data().get_split_count_unmapped_map())
-            .fold(PresentationFrequencyMap::new(),
-                  |a,b|
-                      PresentationFrequencyMap::merge(&a,&b)
-            )
+        self.split_read.get_split_count_unmapped_map().clone()
     }
 
     pub fn get_complete_quality_frequency_map(&self) -> Vec<(u8,u64)> {
@@ -316,7 +301,7 @@ impl TryFrom<CalculationData> for PresentationData {
         let pb = mpb.add(ProgressBar::new(value.per_reference.len() as u64));
 
         pb.set_message("Calculating Per Reference Statistics...");
-        pb.set_prefix("[1/2]");
+        pb.set_prefix("[1/3]");
         pb.set_style(ProgressStyle::default_bar()
             .template("{prefix}     {spinner} [{elapsed_precise}] [{bar}] {pos}/{len} ({eta}) {msg}")
             .progress_chars("#>-")
@@ -336,7 +321,7 @@ impl TryFrom<CalculationData> for PresentationData {
         pb.reset_eta();
 
         pb.set_message("Calculating Unmapped Statistics...");
-        pb.set_prefix("[2/2]");
+        pb.set_prefix("[2/3]");
         pb.set_style(ProgressStyle::default_bar()
             .template("{prefix}     {spinner} [{elapsed_precise}] {msg}")
             .progress_chars("#>-")
@@ -344,11 +329,24 @@ impl TryFrom<CalculationData> for PresentationData {
 
         let unmapped = value.unmapped.try_into()?;
 
+        pb.set_message("Calculating Split Read Statistics...");
+        pb.set_prefix("[3/3]");
+        pb.set_style(ProgressStyle::default_bar()
+            .template("{prefix}     {spinner} [{elapsed_precise}] {msg}")
+            .progress_chars("#>-")
+            .tick_chars("/-\\|"));
+
+        let record_collection: PresentationRecordCollection = value.split_read.into();
+        let presentation_assembler_collection: PresentationAssemblerCollection = record_collection.try_into()?;
+        let split_read_collection: SplitReadCollection = presentation_assembler_collection.try_into()?;
+        let split_read = split_read_collection.into();
+
         pb.finish_with_message("Completed, waiting...");
 
         mpb.clear().map_err(|_| ())?;
 
         Ok(Self {
+            split_read,
             per_reference,
             unmapped,
             meta: value.meta

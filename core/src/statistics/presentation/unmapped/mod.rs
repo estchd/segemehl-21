@@ -2,19 +2,17 @@ use serde_derive::{Deserialize, Serialize};
 
 use single_read::UnmappedSingleReadPresentationData;
 
-use crate::statistics::presentation::unmapped::split_read::UnmappedSplitReadPresentationData;
-use std::convert::{TryFrom, TryInto};
+use std::convert::TryFrom;
 use crate::statistics::calculation::unmapped::UnmappedCalculationData;
 use indicatif::{ProgressBar, ProgressStyle};
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 
 pub mod single_read;
-pub mod split_read;
 
 #[derive(Debug, Deserialize, Serialize)]
 pub struct UnmappedPresentationData {
     single_read: UnmappedSingleReadPresentationData,
-    split_read: UnmappedSplitReadPresentationData
+    split_read: UnmappedSingleReadPresentationData
 }
 
 impl UnmappedPresentationData {
@@ -29,20 +27,8 @@ impl UnmappedPresentationData {
         &self.single_read
     }
 
-    pub fn get_split_read(&self) -> &UnmappedSplitReadPresentationData {
+    pub fn get_split_read(&self) -> &UnmappedSingleReadPresentationData {
         &self.split_read
-    }
-}
-
-impl AsRef<UnmappedSingleReadPresentationData> for UnmappedPresentationData {
-    fn as_ref(&self) -> &UnmappedSingleReadPresentationData {
-        self.get_single_read()
-    }
-}
-
-impl AsRef<UnmappedSplitReadPresentationData> for UnmappedPresentationData {
-    fn as_ref(&self) -> &UnmappedSplitReadPresentationData {
-        self.get_split_read()
     }
 }
 
@@ -72,7 +58,7 @@ impl TryFrom<UnmappedCalculationData> for UnmappedPresentationData {
             .tick_chars("/-\\|"));
         pb.enable_steady_tick(60/15);
 
-        let split_read = calculation.split_read.try_into()?;
+        let split_read = calculation.split_read.into();
 
         pb.finish_and_clear();
 

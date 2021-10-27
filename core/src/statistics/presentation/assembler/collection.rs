@@ -24,14 +24,13 @@ impl TryFrom<PresentationRecordCollection> for PresentationAssemblerCollection {
 
 	fn try_from(value: PresentationRecordCollection) -> Result<Self, Self::Error> {
 		let PresentationRecordCollection {
-			map,
-			starts
+			map
 		} = value;
 
-		let assemblers: Result<Vec<PresentationAssembler>, ()> = starts
+		let assemblers: Result<Vec<PresentationAssembler>, ()> = map
 			.into_par_iter()
-			.map(|item| {
-				PresentationAssembler::try_from_start_record_with_map(item, &map)
+			.map(|(_,item)| {
+				PresentationAssembler::try_from(item)
 			})
 			.collect();
 

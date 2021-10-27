@@ -14,7 +14,8 @@ pub struct PresentationRecord {
     length: u32,
     p_next: i32,
     start: u32,
-    end: u32
+    end: u32,
+    template_length: i32,
 }
 
 impl PresentationRecord {
@@ -45,17 +46,27 @@ impl PresentationRecord {
     pub fn get_p_next(&self) -> i32 {
         self.p_next
     }
+
+    pub fn get_template_length(&self) -> i32 {
+        self.template_length
+    }
 }
 
 impl From<Record> for PresentationRecord {
     fn from(record: Record) -> Self {
         let name = get_record_name_as_string(&record);
-        let flags = record.flag().into();
+        let flags: PresentationFlags = record.flag().into();
         let mapping_quality = get_record_mapping_quality(&record);
         let length = get_record_length_on_reference(&record);
         let start = get_record_start(&record);
         let end = get_record_end(&record);
         let p_next = record.mate_start();
+
+        let mut template_length= record.template_len();
+
+        if flags.get_is_reverse_strand() {
+            template_length = -template_length;
+        }
 
         Self {
             name,
@@ -64,7 +75,8 @@ impl From<Record> for PresentationRecord {
             length,
             p_next,
             start,
-            end
+            end,
+            template_length
         }
     }
 }

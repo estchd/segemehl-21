@@ -6,22 +6,21 @@ use crate::statistics::presentation::record::PresentationRecord;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct PresentationRecordCollection {
-	pub(crate) map: HashMap<u32, HashMap<String,PresentationRecord>>,
-	pub(crate) starts: Vec<PresentationRecord>
+	pub(crate) map: HashMap<String,Vec<PresentationRecord>>,
 }
 
 impl PresentationRecordCollection {
-	pub fn get_map(&self) -> &HashMap<u32, HashMap<String,PresentationRecord>> {
+	pub fn get_map(&self) -> &HashMap<String,Vec<PresentationRecord>> {
 		&self.map
 	}
 
-	pub fn into_map(self) -> HashMap<u32, HashMap<String,PresentationRecord>> {
+	pub fn into_map(self) -> HashMap<String,Vec<PresentationRecord>> {
 		self.map
 	}
 }
 
-impl AsRef<HashMap<u32, HashMap<String,PresentationRecord>>> for PresentationRecordCollection {
-	fn as_ref(&self) -> &HashMap<u32, HashMap<String,PresentationRecord>> {
+impl AsRef<HashMap<String,Vec<PresentationRecord>>> for PresentationRecordCollection {
+	fn as_ref(&self) -> &HashMap<String,Vec<PresentationRecord>> {
 		self.get_map()
 	}
 }
@@ -32,26 +31,14 @@ impl From<CalculationAssemblerMap> for PresentationRecordCollection {
 
 		let map = map.into_iter()
 		             .map(|(key, value)| {
-			             (key, value.into_inner().unwrap())
+			             let values = value.into_inner().unwrap();
+			             let values = values.into_iter().map(|item| item.into()).collect();
+			             (key, values)
 		             })
-					 .map(|(key, value)| {
-						 (key, value.into_iter()
-							.map(|(key, value)| (key, value.into_inner().unwrap().get(0).unwrap().clone().into()))
-							.collect())
-					 })
 		             .collect();
 
-		let starts = value.starts.into_inner().unwrap();
-
-		let starts = starts.into_iter()
-		                   .map(|value| {
-			                   value.into()
-		                   })
-		                   .collect();
-
 		Self {
-			map,
-			starts
+			map
 		}
 	}
 }
