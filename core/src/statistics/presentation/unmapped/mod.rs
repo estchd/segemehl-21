@@ -2,7 +2,6 @@ use serde_derive::{Deserialize, Serialize};
 
 use single_read::UnmappedSingleReadPresentationData;
 
-use std::convert::TryFrom;
 use crate::statistics::calculation::unmapped::UnmappedCalculationData;
 use indicatif::{ProgressBar, ProgressStyle};
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
@@ -32,10 +31,8 @@ impl UnmappedPresentationData {
     }
 }
 
-impl TryFrom<UnmappedCalculationData> for UnmappedPresentationData {
-    type Error = ();
-
-    fn try_from(calculation: UnmappedCalculationData) -> Result<Self, Self::Error> {
+impl From<UnmappedCalculationData> for UnmappedPresentationData {
+    fn from(calculation: UnmappedCalculationData) -> Self {
         let pb = ProgressBar::new_spinner();
         pb.set_message("Calculating Unmapped Single Read Statistics...");
         pb.set_prefix("[1/2]");
@@ -62,9 +59,9 @@ impl TryFrom<UnmappedCalculationData> for UnmappedPresentationData {
 
         pb.finish_and_clear();
 
-        Ok(Self {
+        Self {
             single_read,
             split_read
-        })
+        }
     }
 }

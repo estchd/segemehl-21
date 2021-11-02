@@ -87,22 +87,22 @@ fn main() -> anyhow::Result<()> {
         }
     };
 
-    //TODO Error handling here
-    let calculation_data = CalculationData::new(&header, bin_size).unwrap();
+    let calculation_data = CalculationData::new(&header, bin_size)
+        .context("could not create calculation data")?;
 
     let total_record_stats: (AtomicUsize, AtomicUsize) = (AtomicUsize::new(0), AtomicUsize::new(0));
 
-    reader.into_par_iter().filter_map(|item| item.ok()).for_each(|record| {
+    reader.into_par_iter().filter_map(|item| item.ok()).try_for_each(|record| -> anyhow::Result<()> {
         let total_records = total_record_stats.0.fetch_add(1, Ordering::Relaxed);
         let _ = total_record_stats.1.fetch_add(get_record_length_on_reference(&record) as usize, Ordering::Relaxed);
 
-        //TODO Error handling here
-        calculation_data.add_record(record).unwrap();
+        calculation_data.add_record(record).context("error adding record")?;
 
         if total_records % 10000 == 0 {
             pb.set_position(total_records as u64);
         }
-    });
+        Ok(())
+    })?;
 
     let (record_count, total_record_length) = (total_record_stats.0.into_inner(), total_record_stats.1.into_inner());
 
@@ -113,8 +113,8 @@ fn main() -> anyhow::Result<()> {
         style("[3/4]").bold().dim()
     );
 
-    //TODO Error handling here
-    let presentation_data: PresentationData = calculation_data.try_into().unwrap();
+    let presentation_data: PresentationData = calculation_data.try_into()
+        .context("could not convert calculation data to presentation data")?;
 
     println!();
     println!("Record Count: {}", record_count);
@@ -153,8 +153,10 @@ fn main() -> anyhow::Result<()> {
 
     pb.set_message("Creating File...");
 
-    //TODO Error handling here
-    let mut out_file = File::create(params.output_path).unwrap();
+    let error_text = format!("could not create output file at {}", params.output_path.clone());
+    let mut out_file = File::create(params.output_path).with_context(|| {
+        format!("{}", error_text)
+    })?;
 
     pb.set_position(1);
     pb.set_message("Serializing Data...");
@@ -163,24 +165,24 @@ fn main() -> anyhow::Result<()> {
     let json = true;
 
     if json {
-        //TODO Error handling here
-        let serialized = serde_json::to_string(&presentation_data).unwrap();
+        let serialized = serde_json::to_string(&presentation_data)
+            .context("could not serialize presentation data to json")?;
 
         pb.set_position(2);
         pb.set_message("Writing JSON Data...");
 
-        //TODO Error handling here
-        out_file.write(serialized.as_bytes()).unwrap();
+        out_file.write(serialized.as_bytes())
+            .context("could not write serialized data to file")?;
     }
     else {
-        //TODO Error handling here
-        let serialized = bincode::serialize(&presentation_data).unwrap();
+        let serialized = bincode::serialize(&presentation_data)
+            .context("could not serialize presentation data to bincode")?;
 
         pb.set_position(2);
         pb.set_message("Writing Bytecode Data...");
 
-        //TODO Error handling here
-        out_file.write_all(&serialized).unwrap();
+        out_file.write_all(&serialized)
+            .context("could not write serialized data to file")?;
     }
 
     pb.finish_and_clear();

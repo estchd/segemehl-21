@@ -14,10 +14,8 @@ impl UnmappedSingleReadCalculationData {
 		}
 	}
 
-	pub fn add_record(&self, record: Record) -> Result<(),()> {
+	pub fn add_record(&self, record: Record) {
 		let read_length = get_record_length_on_reference(&record);
 		self.read_length_map.add_entry(read_length);
-
-		Ok(())
 	}
 }

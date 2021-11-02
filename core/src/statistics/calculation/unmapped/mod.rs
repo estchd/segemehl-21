@@ -17,12 +17,12 @@ impl UnmappedCalculationData {
 		}
 	}
 
-	pub fn add_record(&self, record: Record) -> Result<(),()> {
+	pub fn add_record(&self, record: Record) {
 		if record.flag().is_paired() {
-			self.split_read.add_record(record)
+			self.split_read.add_record(record);
 		}
 		else {
-			self.single_read.add_record(record)
+			self.single_read.add_record(record);
 		}
 	}
 }

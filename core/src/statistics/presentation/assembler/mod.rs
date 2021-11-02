@@ -2,6 +2,7 @@ use std::collections::HashMap;
 use std::convert::TryFrom;
 
 use crate::statistics::presentation::record::PresentationRecord;
+use thiserror::Error;
 
 pub mod collection;
 pub mod presentation_record_collection;
@@ -10,8 +11,17 @@ pub struct PresentationAssembler {
     pub(crate) template_length_map: HashMap<i32, Vec<PresentationRecord>>
 }
 
+#[derive(Error,Debug)]
+pub enum PresentationAssemblerTryFromError {
+    #[error("got records with different template names. majority name: {majority_name}, outlier name: {outlier_name}")]
+    DifferentTemplateNames {
+        majority_name: String,
+        outlier_name: String
+    }
+}
+
 impl TryFrom<Vec<PresentationRecord>> for PresentationAssembler {
-    type Error = ();
+    type Error = PresentationAssemblerTryFromError;
 
     fn try_from(value: Vec<PresentationRecord>) -> Result<Self, Self::Error> {
         let mut template_name: Option<String> = None;
@@ -25,7 +35,10 @@ impl TryFrom<Vec<PresentationRecord>> for PresentationAssembler {
                 None => { template_name = Some(name) }
                 Some(current) => {
                     if current != &name {
-                        return Err(())
+                        return Err(PresentationAssemblerTryFromError::DifferentTemplateNames {
+                            majority_name: current.clone(),
+                            outlier_name: name.clone()
+                        })
                     }
                 }
             }

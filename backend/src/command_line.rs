@@ -1,6 +1,7 @@
 use std::num::{NonZeroU32};
 use clap::{App, Arg};
 
+#[derive(Debug, Clone)]
 pub struct CommandLineParameters {
     pub bam_path: String,
     pub bai_path: Option<String>,

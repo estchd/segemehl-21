@@ -54,10 +54,10 @@ impl PerReferencePresentationData {
             self.split_read_data.get_quality_frequency()
         )
     }
+
     pub fn get_quality_frequency_map(&self) -> Vec<(u8, u64)> {
         get_quality_frequency_map(&self.get_quality_frequency())
     }
-
 
     pub fn get_binned_statistics(&self) -> BinnedStatisticsPresentationMap {
         BinnedStatisticsPresentationMap::merge(
@@ -73,7 +73,9 @@ impl PerReferencePresentationData {
         )
     }
 
-    pub fn calculate_from_data(value: PerReferenceCalculationData, mpb: &MultiProgress) -> Result<PerReferencePresentationData, ()> {
+    pub fn calculate_from_data(value: PerReferenceCalculationData, mpb: &MultiProgress)
+        -> PerReferencePresentationData
+    {
         let pb = mpb.add(ProgressBar::new_spinner());
 
         pb.set_message("Calculating Reference Statistics...");
@@ -109,11 +111,11 @@ impl PerReferencePresentationData {
 
         pb.finish_with_message("Completed, waiting...");
 
-        Ok(Self {
+        Self {
             reference_name,
             reference_length,
             single_read_data,
             split_read_data
-        })
+        }
     }
 }

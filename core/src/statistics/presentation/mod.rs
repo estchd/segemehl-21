@@ -2,14 +2,15 @@ use std::convert::{TryFrom, TryInto};
 
 use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde_derive::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::statistics::calculation::CalculationData;
-use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
+use crate::statistics::presentation::assembler::collection::{PresentationAssemblerCollection, PresentationAssemblerCollectionTryFromError};
 use crate::statistics::presentation::assembler::presentation_record_collection::PresentationRecordCollection;
 use crate::statistics::presentation::cigar_operations::CigarOperations;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::per_reference::PerReferencePresentationData;
-use crate::statistics::presentation::split_read::collection::SplitReadCollection;
+use crate::statistics::presentation::split_read::collection::{SplitReadCollection, SplitReadCollectionTryFromAssemblerCollectionError};
 use crate::statistics::presentation::split_read::statistics::SplitReadStatistics;
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
 use crate::statistics::shared::meta::Meta;
@@ -292,8 +293,20 @@ impl PresentationData {
     }
 }
 
+#[derive(Error, Debug)]
+pub enum PresentationDataTryFromError {
+    #[error("could not convert presentation record collection into presentation assembler")]
+    AssemblerCollection {
+        source: PresentationAssemblerCollectionTryFromError
+    },
+    #[error("could not convert presentation assembler into split read collection")]
+    SplitReadCollection {
+        source: SplitReadCollectionTryFromAssemblerCollectionError
+    }
+}
+
 impl TryFrom<CalculationData> for PresentationData {
-    type Error = ();
+    type Error = PresentationDataTryFromError;
 
     fn try_from(value: CalculationData) -> Result<Self, Self::Error> {
         let mpb = MultiProgress::new();
@@ -315,7 +328,7 @@ impl TryFrom<CalculationData> for PresentationData {
                 pb.inc(1);
                 value
             })
-            .collect::<Result<Vec<PerReferencePresentationData>,()>>()?;
+            .collect::<Vec<PerReferencePresentationData>>();
 
         pb.reset_elapsed();
         pb.reset_eta();
@@ -327,7 +340,7 @@ impl TryFrom<CalculationData> for PresentationData {
             .progress_chars("#>-")
             .tick_chars("/-\\|"));
 
-        let unmapped = value.unmapped.try_into()?;
+        let unmapped = value.unmapped.into();
 
         pb.set_message("Calculating Split Read Statistics...");
         pb.set_prefix("[3/3]");
@@ -337,13 +350,23 @@ impl TryFrom<CalculationData> for PresentationData {
             .tick_chars("/-\\|"));
 
         let record_collection: PresentationRecordCollection = value.split_read.into();
-        let presentation_assembler_collection: PresentationAssemblerCollection = record_collection.try_into()?;
-        let split_read_collection: SplitReadCollection = presentation_assembler_collection.try_into()?;
+        let presentation_assembler_collection: PresentationAssemblerCollection = record_collection.try_into()
+            .map_err(|source| {
+                PresentationDataTryFromError::AssemblerCollection {
+                    source
+                }
+            })?;
+        let split_read_collection: SplitReadCollection = presentation_assembler_collection.try_into()
+            .map_err(|source| {
+                PresentationDataTryFromError::SplitReadCollection {
+                    source
+                }
+            })?;
         let split_read = split_read_collection.into();
 
         pb.finish_with_message("Completed, waiting...");
 
-        mpb.clear().map_err(|_| ())?;
+        mpb.clear().unwrap();
 
         Ok(Self {
             split_read,

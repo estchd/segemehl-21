@@ -1,9 +1,9 @@
 use std::convert::TryFrom;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use crate::statistics::presentation::assembler::PresentationAssembler;
+use thiserror::Error;
+use crate::statistics::presentation::assembler::{PresentationAssembler, PresentationAssemblerTryFromError};
 use crate::statistics::presentation::assembler::presentation_record_collection::PresentationRecordCollection;
-
 
 pub struct PresentationAssemblerCollection {
     assemblers: Vec<PresentationAssembler>
@@ -19,23 +19,36 @@ impl PresentationAssemblerCollection {
 	}
 }
 
+#[derive(Error, Debug)]
+pub enum PresentationAssemblerCollectionTryFromError {
+	#[error("could not assemble presentation record vector")]
+	PresentationAssembler {
+		source: PresentationAssemblerTryFromError
+	}
+}
+
 impl TryFrom<PresentationRecordCollection> for PresentationAssemblerCollection {
-	type Error = ();
+	type Error = PresentationAssemblerCollectionTryFromError;
 
 	fn try_from(value: PresentationRecordCollection) -> Result<Self, Self::Error> {
 		let PresentationRecordCollection {
 			map
 		} = value;
 
-		let assemblers: Result<Vec<PresentationAssembler>, ()> = map
+		let assemblers: Vec<PresentationAssembler> = map
 			.into_par_iter()
 			.map(|(_,item)| {
 				PresentationAssembler::try_from(item)
 			})
-			.collect();
+			.collect::<Result<Vec<PresentationAssembler>, PresentationAssemblerTryFromError>>()
+			.map_err(|source| {
+				PresentationAssemblerCollectionTryFromError::PresentationAssembler {
+					source
+				}
+			})?;
 
-		assemblers.map(|item| PresentationAssemblerCollection {
-			assemblers: item
+		Ok(PresentationAssemblerCollection {
+			assemblers
 		})
 	}
 }

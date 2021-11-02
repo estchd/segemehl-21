@@ -6,8 +6,15 @@ use crate::statistics::calculation::binned::BinConfig;
 use crate::statistics::calculation::binned::data::BinStatisticsCalculationData;
 use crate::util::{calculate_bin, length, get_record_start, get_record_end, CigarMaxLengthIter};
 use bam::Record;
+use thiserror::Error;
 use bam::record::cigar::Operation;
 use std::sync::atomic::Ordering::Relaxed;
+
+#[derive(Error, Debug)]
+pub enum BinnedStatisticsCalculationMapNewError {
+	#[error("the range end was smaller than the range start")]
+	InvalidRange
+}
 
 #[derive(Debug)]
 pub struct BinnedStatisticsCalculationMap {
@@ -18,8 +25,8 @@ pub struct BinnedStatisticsCalculationMap {
 }
 
 impl BinnedStatisticsCalculationMap {
-	pub fn new(start: u32, end: u32, config: BinConfig) -> Result<Self,()> {
-		if end < start {return Err(());}
+	pub fn new(start: u32, end: u32, config: BinConfig) -> Result<Self, BinnedStatisticsCalculationMapNewError> {
+		if end < start {return Err(BinnedStatisticsCalculationMapNewError::InvalidRange);}
 
 		let length = length(start, end);
 
