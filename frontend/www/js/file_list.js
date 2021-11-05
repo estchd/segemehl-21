@@ -121,7 +121,7 @@ function handle_process_file_completion(files) {
 
 function handle_process_file_fail(files) {
 
-    for (const file in files) {
+    for (const file of files) {
 
         console.error("file promise failed for file " + file.name);
         console.error("Err: " + file.err);

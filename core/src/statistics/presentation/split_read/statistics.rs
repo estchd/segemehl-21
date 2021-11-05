@@ -1,4 +1,4 @@
-use rayon::iter::{ParallelBridge, ParallelIterator};
+use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
@@ -47,7 +47,7 @@ impl SplitReadStatistics {
 
 impl From<SplitReadCollection> for SplitReadStatistics {
 	fn from(value: SplitReadCollection) -> Self {
-		let statistics: Vec<(PresentationFrequencyMap<i64>, u32, usize, usize)> = value.into_inner().iter().map(|item| {
+		let statistics: Vec<(PresentationFrequencyMap<i64>, u32, usize, usize)> = value.into_inner().par_iter().map(|item| {
 			item.get_statistics()
 		}).collect();
 

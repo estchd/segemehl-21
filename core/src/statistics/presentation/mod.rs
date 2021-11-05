@@ -15,7 +15,6 @@ use crate::statistics::presentation::split_read::statistics::SplitReadStatistics
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
 use crate::statistics::shared::meta::Meta;
 use crate::util::get_quality_frequency_map;
-
 pub mod frequency_map;
 pub mod binned;
 pub mod per_reference;
@@ -349,19 +348,23 @@ impl TryFrom<CalculationData> for PresentationData {
             .progress_chars("#>-")
             .tick_chars("/-\\|"));
 
+        pb.set_message("Collecting Records");
         let record_collection: PresentationRecordCollection = value.split_read.into();
+        pb.set_message("Creating Assemblers");
         let presentation_assembler_collection: PresentationAssemblerCollection = record_collection.try_into()
             .map_err(|source| {
                 PresentationDataTryFromError::AssemblerCollection {
                     source
                 }
             })?;
+        pb.set_message("Assembling Split Reads");
         let split_read_collection: SplitReadCollection = presentation_assembler_collection.try_into()
             .map_err(|source| {
                 PresentationDataTryFromError::SplitReadCollection {
                     source
                 }
             })?;
+        pb.set_message("Calculating Statistics");
         let split_read = split_read_collection.into();
 
         pb.finish_with_message("Completed, waiting...");

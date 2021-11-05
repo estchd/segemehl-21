@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 
 use serde_derive::{Deserialize, Serialize};
 use crate::statistics::calculation::assembler::map::CalculationAssemblerMap;
@@ -29,10 +30,10 @@ impl From<CalculationAssemblerMap> for PresentationRecordCollection {
 	fn from(value: CalculationAssemblerMap) -> Self {
 		let map = value.map.into_inner().unwrap();
 
-		let map = map.into_iter()
+		let map = map.into_par_iter()
 		             .map(|(key, value)| {
 			             let values = value.into_inner().unwrap();
-			             let values = values.into_iter().map(|item| item.into()).collect();
+			             let values = values.into_par_iter().map(|item| item.into()).collect();
 			             (key, values)
 		             })
 		             .collect();

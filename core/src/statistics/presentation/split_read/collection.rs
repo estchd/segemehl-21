@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use rayon::iter::{ParallelBridge, ParallelIterator};
+use std::sync::Mutex;
+use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
@@ -51,9 +52,9 @@ impl TryFrom<PresentationAssembler> for SplitReadCollection {
 			template_length_map
 		} = value;
 
-		let mut split_reads: Vec<SplitRead> = vec![];
+		let split_reads: Mutex<Vec<SplitRead>> = Mutex::new(vec![]);
 
-		for template_length in template_length_map {
+		template_length_map.into_par_iter().try_for_each(|template_length| {
 			let (_, associated_records) = template_length;
 
 			let partial_split_reads: Vec<PartialSplitRead> = associated_records.into_iter().map(|record| {
@@ -164,12 +165,14 @@ impl TryFrom<PresentationAssembler> for SplitReadCollection {
 
 			for completed_split_read in completed_split_reads {
 				let split_read = completed_split_read.try_into().unwrap();
-				split_reads.push(split_read);
+				let mut split_reads_lock = split_reads.lock().unwrap();
+				split_reads_lock.push(split_read);
 			}
-		}
+			Ok(())
+		})?;
 
 		Ok(Self {
-			split_reads
+			split_reads: split_reads.into_inner().unwrap()
 		})
 	}
 }
