@@ -89,14 +89,14 @@ function update_cigar_total_file_plot() {
 
             const name = file_info[0];
             let colors = file_info[1];
-            colors.shift();
+            let background_colors = [colors[1], colors[2], colors[3], colors[4]];
 
             const data = get_dataset(name,"cigar_total_file");
 
             let dataset = {
                 label: name,
                 data: data,
-                backgroundColor: colors
+                backgroundColor: background_colors
             };
 
             plot_data.datasets.push(dataset);
@@ -193,15 +193,15 @@ function update_cigar_percentage_file_plot() {
             if (!file_info[2]) {continue;}
 
             const name = file_info[0];
-            let  color = file_info[1];
-            color.shift();
+            let colors = file_info[1];
+            let background_colors = [colors[1], colors[2], colors[3], colors[4]];
 
             const data = get_dataset(name,"cigar_percentage_file");
 
             let dataset = {
                 label: name,
                 data: data,
-                backgroundColor: color
+                backgroundColor: background_colors
             };
 
             plot_data.datasets.push(dataset);
