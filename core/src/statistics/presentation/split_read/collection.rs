@@ -1,12 +1,13 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
+use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
 use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
 use crate::statistics::presentation::assembler::PresentationAssembler;
-use crate::statistics::presentation::record::PresentationRecord;
+use crate::statistics::presentation::split_read::partial::PartialSplitRead;
 use crate::statistics::presentation::split_read::SplitRead;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -44,15 +45,22 @@ pub enum SplitReadCollectionTryFromAssemblerError {
 	}
 }
 
-impl TryFrom<PresentationAssembler> for SplitReadCollection {
+impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usize, usize) {
 	type Error = SplitReadCollectionTryFromAssemblerError;
 
 	fn try_from(value: PresentationAssembler) -> Result<Self, Self::Error> {
+		let remove_supplementary = false;
+
 		let PresentationAssembler {
 			template_length_map
 		} = value;
 
 		let split_reads: Mutex<Vec<SplitRead>> = Mutex::new(vec![]);
+
+		let missing_info_dropped_read = AtomicUsize::new(0usize);
+		let missing_next_dropped_read = AtomicUsize::new(0usize);
+		let unmergeable_dropped_read = AtomicUsize::new(0usize);
+		let supplementary_dropped_read = AtomicUsize::new(0usize);
 
 		template_length_map.into_par_iter().try_for_each(|template_length| {
 			let (_, associated_records) = template_length;
@@ -60,8 +68,6 @@ impl TryFrom<PresentationAssembler> for SplitReadCollection {
 			let partial_split_reads: Vec<PartialSplitRead> = associated_records.into_iter().map(|record| {
 				PartialSplitRead::from_read(record)
 			}).collect();
-
-			let mut completed_split_reads: Vec<PartialSplitRead> = vec![];
 
 			let mut partial_split_read_map: HashMap<(i32, u32), Vec<PartialSplitRead>> = HashMap::new();
 
@@ -78,90 +84,26 @@ impl TryFrom<PresentationAssembler> for SplitReadCollection {
 				}
 			}
 
-			loop {
-				if partial_split_read_map.is_empty() { break; }
+			let mut supplementary_dropped = 0usize;
 
-				let mut pair: Option<((i32, u32, usize),(i32, u32))> = None;
-
-				let mut all_missing_chain = None;
-
-				for (key, value) in &partial_split_read_map {
-					for (i, read) in value.iter().enumerate() {
-						let p_next = read.get_p_next();
-						let r_next = read.get_r_next();
-
-						if p_next == -1 || r_next == -1 {
-							if let None = all_missing_chain {
-								all_missing_chain = Some(true);
-							}
-							continue;
-						}
-
-						all_missing_chain = Some(false);
-
-						let next = partial_split_read_map.get(&(r_next, p_next as u32)).unwrap();
-
-						if next.len() > 1 { continue; }
-
-						pair = Some(((key.0, key.1, i), (r_next, p_next as u32)));
-						break;
-					}
-				}
-
-				match pair {
-					None => {
-						if let Some(true) = all_missing_chain {
-							let mut count = 0;
-							for (_, value) in &partial_split_read_map {
-								count += value.len();
-							}
-							let read = partial_split_read_map.values().next().unwrap().first().unwrap();
-							let qname = read.get_name();
-							let tlen = read.get_template_length();
-							println!("WARN: Template with split reads that do not have pnext or rnext information, {} unmergeable reads were dropped, qname: {}, tlen: {}", count, qname, tlen);
-							break;
-						}
-						else {
-							return Err(SplitReadCollectionTryFromAssemblerError::Unsolvable {})
-						}
-					}
-					Some((first_key, second_key)) => {
-						let mut first_vec = partial_split_read_map.remove(&(first_key.0, first_key.1)).unwrap();
-						let first = first_vec.remove(first_key.2);
-						let mut second_vec = partial_split_read_map.remove(&second_key).unwrap();
-						let second = second_vec.remove(0);
-
-						if !first_vec.is_empty() {
-							partial_split_read_map.insert((first_key.0, first_key.1), first_vec);
-						}
-
-						let combined = match PartialSplitRead::combine(first,second) {
-							Ok(split_read) => {
-								split_read
-							}
-							Err(_) => {
-								panic!("Combine Error");
-							}
-						};
-
-						if combined.is_complete() {
-							completed_split_reads.push(combined);
-						}
-						else {
-							let start = combined.get_start();
-							let ref_id = combined.get_ref_id();
-
-							if partial_split_read_map.contains_key(&(ref_id, start)) {
-								let records = partial_split_read_map.get_mut(&(ref_id, start)).unwrap();
-								records.push(combined);
-							}
-							else {
-								partial_split_read_map.insert((ref_id, start), vec![combined]);
-							}
-						}
-					}
-				}
+			if remove_supplementary {
+				supplementary_dropped += remove_supplementary_reads(&mut partial_split_read_map);
 			}
+
+			let (
+				completed_split_reads,
+				dropped_no_next,
+				dropped_missing_info,
+				dropped_unmergeable,
+				dropped_supplementary
+			) = merge_partial_split_read_map(&mut partial_split_read_map);
+
+			supplementary_dropped += dropped_supplementary;
+
+			missing_info_dropped_read.fetch_add(dropped_missing_info, Ordering::Relaxed);
+			unmergeable_dropped_read.fetch_add(dropped_unmergeable, Ordering::Relaxed);
+			missing_next_dropped_read.fetch_add(dropped_no_next, Ordering::Relaxed);
+			supplementary_dropped_read.fetch_add(supplementary_dropped, Ordering::Relaxed);
 
 			for completed_split_read in completed_split_reads {
 				let split_read = completed_split_read.try_into().unwrap();
@@ -171,507 +113,306 @@ impl TryFrom<PresentationAssembler> for SplitReadCollection {
 			Ok(())
 		})?;
 
-		Ok(Self {
+		let dropped_no_next = missing_next_dropped_read.into_inner();
+		let dropped_unmergeable = unmergeable_dropped_read.into_inner();
+		let dropped_missing_info = missing_info_dropped_read.into_inner();
+		let dropped_supplementary = supplementary_dropped_read.into_inner();
+
+		Ok((SplitReadCollection {
 			split_reads: split_reads.into_inner().unwrap()
-		})
+		}, dropped_no_next, dropped_missing_info, dropped_unmergeable, dropped_supplementary))
 	}
 }
 
-enum PartialSplitRead {
-	SingleSplitRead(PresentationRecord),
-	StartOnly(PresentationRecord),
-	StartAndMiddle(PresentationRecord, Vec<PresentationRecord>),
-	MiddleOnly(Vec<PresentationRecord>),
-	MiddleAndEnd(Vec<PresentationRecord>, PresentationRecord),
-	EndOnly(PresentationRecord),
-	StartAndEnd(PresentationRecord, PresentationRecord),
-	StartMiddleEnd(PresentationRecord, Vec<PresentationRecord>, PresentationRecord),
-	EndAndStart(PresentationRecord, PresentationRecord),
-	EndAndStartAndMiddle(PresentationRecord, PresentationRecord, Vec<PresentationRecord>),
-	MiddleAndEndAndStart(Vec<PresentationRecord>, PresentationRecord, PresentationRecord),
-	MiddleAndEndAndStartAndMiddle(Vec<PresentationRecord>, PresentationRecord, PresentationRecord, Vec<PresentationRecord>)
+fn remove_supplementary_reads(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>) -> usize {
+	let mut removed_reads = 0usize;
+	loop {
+		let next_supplementary_read = find_next_supplementary_read(partial_split_read_map);
+		match next_supplementary_read {
+			None => {
+				break;
+			}
+			Some((key, i)) => {
+				removed_reads += 1;
+				let vec = partial_split_read_map.get_mut(&key).unwrap();
+				if vec.len() == 1 {
+					partial_split_read_map.remove(&key);
+				}
+				else {
+					vec.remove(i);
+				}
+			}
+		}
+	}
+	removed_reads
 }
 
-impl PartialSplitRead {
-	pub fn from_read(read: PresentationRecord) -> Self {
-		let flags = read.get_flags();
-
-		match (flags.get_is_first_mate(), flags.get_is_last_mate()) {
-			(true, true) => {
-				Self::SingleSplitRead(read)
-			},
-			(true, false) => {
-				Self::StartOnly(read)
-			},
-			(false, true) => {
-				Self::EndOnly(read)
-			},
-			(false, false) => {
-				Self::MiddleOnly(vec![read])
+fn find_next_supplementary_read(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRead>>) -> Option<((i32, u32), usize)> {
+	for (key, vec) in partial_split_read_map {
+		for (i, read) in vec.iter().enumerate() {
+			if read.is_supplementary() {
+				return Some((*key, i));
 			}
 		}
 	}
-
-	pub fn get_name(&self) -> String {
-		match self {
-			PartialSplitRead::SingleSplitRead(read) |
-			PartialSplitRead::StartOnly(read) |
-			PartialSplitRead::StartAndMiddle(read, _) |
-			PartialSplitRead::MiddleAndEnd(_, read) |
-			PartialSplitRead::EndOnly(read) |
-			PartialSplitRead::StartAndEnd(read, _) |
-			PartialSplitRead::StartMiddleEnd(read, _, _) |
-			PartialSplitRead::EndAndStart(read, _) |
-			PartialSplitRead::EndAndStartAndMiddle(read, _, _) |
-			PartialSplitRead::MiddleAndEndAndStart(_, read, _) |
-			PartialSplitRead::MiddleAndEndAndStartAndMiddle(_, read, _, _) => {
-				read.get_name()
-			}
-			PartialSplitRead::MiddleOnly(middle) => {
-				middle.first().unwrap().get_name()
-			}
-		}
-	}
-
-	pub fn get_template_length(&self) -> i32 {
-		match self {
-			PartialSplitRead::SingleSplitRead(read) |
-			PartialSplitRead::StartOnly(read) |
-			PartialSplitRead::StartAndMiddle(read, _) |
-			PartialSplitRead::MiddleAndEnd(_, read) |
-			PartialSplitRead::EndOnly(read) |
-			PartialSplitRead::StartAndEnd(read, _) |
-			PartialSplitRead::StartMiddleEnd(read, _, _) |
-			PartialSplitRead::EndAndStart(read, _) |
-			PartialSplitRead::EndAndStartAndMiddle(read, _, _) |
-			PartialSplitRead::MiddleAndEndAndStart(_, read, _) |
-			PartialSplitRead::MiddleAndEndAndStartAndMiddle(_, read, _, _) => {
-				read.get_template_length()
-			}
-			PartialSplitRead::MiddleOnly(middle) => {
-				middle.first().unwrap().get_template_length()
-			}
-		}
-	}
-
-	pub fn get_start(&self) -> u32 {
-		match self {
-			PartialSplitRead::SingleSplitRead(read) |
-			PartialSplitRead::StartOnly(read) |
-			PartialSplitRead::StartAndMiddle(read, _) |
-			PartialSplitRead::EndOnly(read) |
-			PartialSplitRead::StartAndEnd(read, _) |
-			PartialSplitRead::StartMiddleEnd(read, _, _) |
-			PartialSplitRead::EndAndStart(read, _) |
-			PartialSplitRead::EndAndStartAndMiddle(read, _, _) => {
-				read.get_start()
-			}
-			PartialSplitRead::MiddleOnly(middle) |
-			PartialSplitRead::MiddleAndEnd(middle, _) |
-			PartialSplitRead::MiddleAndEndAndStart(middle, _, _) |
-			PartialSplitRead::MiddleAndEndAndStartAndMiddle(middle, _, _, _) => {
-				middle.first().unwrap().get_start()
-			}
-		}
-	}
-
-	pub fn get_p_next(&self) -> i32 {
-		match self {
-			PartialSplitRead::SingleSplitRead(read) |
-			PartialSplitRead::StartOnly(read) |
-			PartialSplitRead::MiddleAndEnd(_, read) |
-			PartialSplitRead::EndOnly(read) |
-			PartialSplitRead::StartAndEnd(_, read) |
-			PartialSplitRead::StartMiddleEnd(_, _, read) |
-			PartialSplitRead::EndAndStart(_, read) |
-			PartialSplitRead::MiddleAndEndAndStart(_, _, read) => {
-				read.get_p_next()
-			}
-			PartialSplitRead::StartAndMiddle(_, middle) |
-			PartialSplitRead::MiddleOnly(middle) |
-			PartialSplitRead::EndAndStartAndMiddle(_, _, middle) |
-			PartialSplitRead::MiddleAndEndAndStartAndMiddle(_, _, _, middle) => {
-				middle.last().unwrap().get_p_next()
-			}
-		}
-	}
-
-	pub fn get_ref_id(&self) -> i32 {
-		match self {
-			PartialSplitRead::SingleSplitRead(read) |
-			PartialSplitRead::StartOnly(read) |
-			PartialSplitRead::StartAndMiddle(read, _) |
-			PartialSplitRead::EndOnly(read) |
-			PartialSplitRead::StartAndEnd(read, _) |
-			PartialSplitRead::StartMiddleEnd(read, _, _) |
-			PartialSplitRead::EndAndStart(read, _) |
-			PartialSplitRead::EndAndStartAndMiddle(read, _, _) => {
-				read.get_ref_id()
-			}
-			PartialSplitRead::MiddleOnly(middle) |
-			PartialSplitRead::MiddleAndEnd(middle, _) |
-			PartialSplitRead::MiddleAndEndAndStart(middle, _, _) |
-			PartialSplitRead::MiddleAndEndAndStartAndMiddle(middle, _, _, _) => {
-				middle.first().unwrap().get_ref_id()
-			}
-		}
-	}
-
-	pub fn get_r_next(&self) -> i32 {
-		match self {
-			PartialSplitRead::SingleSplitRead(read) |
-			PartialSplitRead::StartOnly(read) |
-			PartialSplitRead::StartAndMiddle(read, _) |
-			PartialSplitRead::MiddleAndEnd(_, read) |
-			PartialSplitRead::EndOnly(read) |
-			PartialSplitRead::StartAndEnd(_, read) |
-			PartialSplitRead::StartMiddleEnd(_, _, read) |
-			PartialSplitRead::EndAndStart(_, read) |
-			PartialSplitRead::MiddleAndEndAndStart(_, _, read) => {
-				read.get_r_next()
-			}
-			PartialSplitRead::MiddleOnly(middle) |
-			PartialSplitRead::EndAndStartAndMiddle(_, _, middle) |
-			PartialSplitRead::MiddleAndEndAndStartAndMiddle(_, _, _, middle) => {
-				middle.last().unwrap().get_r_next()
-			}
-		}
-	}
-
-	pub fn is_complete(&self) -> bool {
-		match self {
-			PartialSplitRead::StartOnly(_) |
-			PartialSplitRead::StartAndMiddle(_, _) |
-			PartialSplitRead::MiddleOnly(_) |
-			PartialSplitRead::MiddleAndEnd(_, _) |
-			PartialSplitRead::EndAndStart(_, _) |
-			PartialSplitRead::EndAndStartAndMiddle(_, _, _) |
-			PartialSplitRead::MiddleAndEndAndStart(_, _, _) |
-			PartialSplitRead::MiddleAndEndAndStartAndMiddle(_, _, _, _) |
-			PartialSplitRead::EndOnly(_) => {
-				false
-			},
-			PartialSplitRead::SingleSplitRead(_) |
-			PartialSplitRead::StartAndEnd(_, _) |
-			PartialSplitRead::StartMiddleEnd(_, _, _) => {
-				true
-			}
-		}
-	}
-
-	pub fn combine(a: Self, b: Self) -> Result<Self, (Self,Self)> {
-		match (a,b) {
-			(Self::StartOnly(start), Self::MiddleOnly(middle)) |
-			(Self::MiddleOnly(middle), Self::StartOnly(start)) => {
-				let middle_first = middle.first().unwrap();
-				if start.get_p_next() as u32 == middle_first.get_start() &&
-					start.get_r_next() == middle_first.get_ref_id() {
-					Ok(Self::StartAndMiddle(start, middle))
-				}
-				else {
-					Err((Self::StartOnly(start), Self::MiddleOnly(middle)))
-				}
-			},
-
-			(Self::StartOnly(start), Self::MiddleAndEnd(middle, end)) |
-			(Self::MiddleAndEnd(middle, end), Self::StartOnly(start)) => {
-				let middle_first = middle.first().unwrap();
-
-				let end_continue = end.get_p_next() as u32 == start.get_start() &&
-					end.get_r_next() == start.get_ref_id();
-				let start_continue = start.get_p_next() as u32 == middle_first.get_start() &&
-					start.get_r_next() == middle_first.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						Ok(Self::StartMiddleEnd(start, middle, end))
-					},
-					(false , true) => {
-						Ok(Self::MiddleAndEndAndStart(middle, end, start))
-					}
-					(true, false) |
-					(false, false) => {
-						Err((Self::StartOnly(start), Self::MiddleAndEnd(middle, end)))
-					}
-				}
-			},
-
-			(Self::StartOnly(start), Self::EndOnly(end)) |
-			(Self::EndOnly(end), Self::StartOnly(start)) => {
-				let start_continue = start.get_p_next() as u32 == end.get_start() &&
-					start.get_r_next() == end.get_ref_id();
-				let end_continue = end.get_p_next() as u32 == start.get_start() &&
-					end.get_r_next() == start.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						Ok(Self::StartAndEnd(start, end))
-					},
-					(false, true) => {
-						Ok(Self::EndAndStart(end, start))
-					},
-					(true, false) |
-					(false, false) => {
-						Err((Self::StartOnly(start), Self::EndOnly(end)))
-					}
-				}
-			}
-
-			(Self::StartAndMiddle(start, mut start_middle), Self::MiddleOnly(middle)) |
-			(Self::MiddleOnly(middle), Self::StartAndMiddle(start, mut start_middle)) => {
-				let start_middle_last = start_middle.last().unwrap();
-				let middle_first = middle.first().unwrap();
-				if start_middle_last.get_p_next() as u32 == middle_first.get_start() &&
-					start_middle_last.get_r_next() == middle_first.get_ref_id() {
-					start_middle.extend(middle);
-					Ok(Self::StartAndMiddle(start, start_middle))
-				}
-				else {
-					Err((Self::StartAndMiddle(start, start_middle), Self::MiddleOnly(middle)))
-				}
-			},
-
-			(Self::StartAndMiddle(start, mut start_middle), Self::MiddleAndEnd(end_middle, end)) |
-			(Self::MiddleAndEnd(end_middle, end), Self::StartAndMiddle(start, mut start_middle)) => {
-				let start_middle_last = start_middle.last().unwrap();
-				let end_middle_first = end_middle.first().unwrap();
-
-				let start_continue = start_middle_last.get_p_next() as u32 == end_middle_first.get_start() &&
-					start_middle_last.get_r_next() == end_middle_first.get_ref_id();
-				let end_continue = end.get_p_next() as u32 == start.get_start() &&
-					end.get_r_next() == start.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						start_middle.extend(end_middle);
-						Ok(Self::StartMiddleEnd(start, start_middle, end))
-					},
-					(false, true) => {
-						Ok(Self::MiddleAndEndAndStartAndMiddle(end_middle, end, start, start_middle))
-					}
-					(true, false) |
-					(false, false) => {
-						Err((Self::StartAndMiddle(start, start_middle), Self::MiddleAndEnd(end_middle, end)))
-					}
-				}
-			},
-
-			(Self::StartAndMiddle(start, middle), Self::EndOnly(end)) |
-			(Self::EndOnly(end), Self::StartAndMiddle(start, middle)) => {
-				let middle_last = middle.last().unwrap();
-
-				let start_continue =  middle_last.get_p_next() as u32 == end.get_start() &&
-					middle_last.get_r_next() == end.get_ref_id();
-				let end_continue = end.get_p_next() as u32 == start.get_start() &&
-					end.get_r_next() == start.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						Ok(Self::StartMiddleEnd(start, middle, end))
-					}
-					(false, true) => {
-						Ok(Self::EndAndStartAndMiddle(end, start, middle))
-					}
-					(true, false) |
-					(false, false) => {
-						Err((Self::StartAndMiddle(start, middle), Self::EndOnly(end)))
-					}
-				}
-			},
-
-			(Self::MiddleOnly(mut a), Self::MiddleOnly(mut b)) => {
-				let a_first = a.first().unwrap();
-				let a_last = a.last().unwrap();
-				let b_first = b.first().unwrap();
-				let b_last = b.last().unwrap();
-				if a_last.get_p_next() as u32 == b_first.get_start() &&
-					a_last.get_r_next() == b_first.get_ref_id() {
-					a.extend(b);
-					Ok(Self::MiddleOnly(a))
-				}
-				else if b_last.get_p_next() as u32 == a_first.get_start() &&
-					b_last.get_r_next() == a_first.get_ref_id() {
-					b.extend(a);
-					Ok(Self::MiddleOnly(b))
-				}
-				else {
-					Err((Self::MiddleOnly(a), Self::MiddleOnly(b)))
-				}
-			},
-
-			(Self::MiddleOnly(mut middle), Self::MiddleAndEnd(end_middle, end)) |
-			(Self::MiddleAndEnd(end_middle, end), Self::MiddleOnly(mut middle)) => {
-				let middle_last = middle.last().unwrap();
-				let end_middle_first = end_middle.first().unwrap();
-				if middle_last.get_p_next() as u32 == end_middle_first.get_start() &&
-					middle_last.get_r_next() == end_middle_first.get_ref_id() {
-					middle.extend(end_middle);
-					Ok(Self::MiddleAndEnd(middle, end))
-				}
-				else {
-					Err((Self::MiddleOnly(middle), Self::MiddleAndEnd(end_middle, end)))
-				}
-			},
-
-			(Self::MiddleOnly(middle), Self::EndOnly(end)) |
-			(Self::EndOnly(end), Self::MiddleOnly(middle)) => {
-				let middle_last = middle.last().unwrap();
-				if middle_last.get_p_next() as u32 == end.get_start() &&
-					middle_last.get_r_next() == end.get_ref_id() {
-					Ok(Self::MiddleAndEnd(middle, end))
-				}
-				else {
-					Err((Self::MiddleOnly(middle), Self::EndOnly(end)))
-				}
-			},
-
-			(Self::MiddleOnly(middle), Self::EndAndStart(end, start)) |
-			(Self::EndAndStart(end, start), Self::MiddleOnly(middle)) => {
-				let middle_first = middle.first().unwrap();
-				let middle_last = middle.last().unwrap();
-
-				let start_continue = start.get_p_next() as u32 == middle_first.get_start() &&
-					start.get_r_next() == middle_first.get_ref_id();
-				let end_continue = middle_last.get_p_next() as u32 == end.get_start() &&
-					middle_last.get_r_next() == end.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						Ok(Self::StartMiddleEnd(start, middle, end))
-					},
-					(true, false) => {
-						Ok(Self::EndAndStartAndMiddle(end, start, middle))
-					},
-					(false, true) => {
-						Ok(Self::MiddleAndEndAndStart(middle, end, start))
-					},
-					(false, false) => {
-						Err((Self::MiddleOnly(middle), Self::EndAndStart(end, start)))
-					}
-				}
-			},
-
-			(Self::MiddleOnly(middle), Self::EndAndStartAndMiddle(end, start, mut start_middle)) |
-			(Self::EndAndStartAndMiddle(end, start, mut start_middle), Self::MiddleOnly(middle)) => {
-				let middle_first = middle.first().unwrap();
-				let middle_last = middle.last().unwrap();
-
-				let start_middle_last = start_middle.last().unwrap();
-
-				let start_continue = start_middle_last.get_p_next() as u32 == middle_first.get_start() &&
-					start_middle_last.get_r_next() == middle_first.get_ref_id();
-				let end_continue = middle_last.get_p_next() as u32 == end.get_start() &&
-					middle_last.get_r_next() == end.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						start_middle.extend(middle);
-						Ok(Self::StartMiddleEnd(start, start_middle, end))
-					},
-					(true, false) => {
-						start_middle.extend(middle);
-						Ok(Self::EndAndStartAndMiddle(end, start, start_middle))
-					},
-					(false, true) => {
-						Ok(Self::MiddleAndEndAndStartAndMiddle(middle, end, start, start_middle))
-					},
-					(false, false) => {
-						Err((Self::MiddleOnly(middle), Self::EndAndStartAndMiddle(end, start, start_middle)))
-					}
-				}
-			},
-
-			(Self::MiddleOnly(mut middle), Self::MiddleAndEndAndStart(end_middle, end, start)) |
-			(Self::MiddleAndEndAndStart(end_middle, end, start), Self::MiddleOnly(mut middle)) => {
-				let middle_first = middle.first().unwrap();
-				let middle_last = middle.last().unwrap();
-
-				let end_middle_first = end_middle.first().unwrap();
-
-				let start_continue = start.get_p_next() as u32 == middle_first.get_start() &&
-					start.get_r_next() == middle_first.get_ref_id();
-				let end_continue = middle_last.get_p_next() as u32 == end_middle_first.get_start() &&
-					middle_last.get_r_next() == end_middle_first.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						middle.extend(end_middle);
-						Ok(Self::StartMiddleEnd(start, middle, end))
-					},
-					(true, false) => {
-						Ok(Self::MiddleAndEndAndStartAndMiddle(end_middle, end, start, middle))
-					},
-					(false, true) => {
-						middle.extend(end_middle);
-						Ok(Self::MiddleAndEndAndStart(middle, end, start))
-					},
-					(false, false) => {
-						Err((Self::MiddleOnly(middle), Self::MiddleAndEndAndStart(end_middle,end, start)))
-					}
-				}
-			},
-
-			(Self::MiddleOnly(mut middle), Self::MiddleAndEndAndStartAndMiddle(end_middle, end, start, mut start_middle)) |
-			(Self::MiddleAndEndAndStartAndMiddle(end_middle, end, start, mut start_middle), Self::MiddleOnly(mut middle)) => {
-				let middle_first = middle.first().unwrap();
-				let middle_last = middle.last().unwrap();
-
-				let end_middle_first = end_middle.first().unwrap();
-				let start_middle_last = start_middle.last().unwrap();
-
-				let start_continue = start_middle_last.get_p_next() as u32 == middle_first.get_start() &&
-					start_middle_last.get_r_next() == middle_first.get_ref_id();
-				let end_continue = middle_last.get_p_next() as u32 == end_middle_first.get_start() &&
-					middle_last.get_r_next() == end_middle_first.get_ref_id();
-
-				match (start_continue, end_continue) {
-					(true, true) => {
-						start_middle.extend(middle);
-						start_middle.extend(end_middle);
-						Ok(Self::StartMiddleEnd(start, start_middle, end))
-					},
-					(true, false) => {
-						start_middle.extend(middle);
-						Ok(Self::MiddleAndEndAndStartAndMiddle(end_middle, end, start, start_middle))
-					},
-					(false, true) => {
-						middle.extend(end_middle);
-						Ok(Self::MiddleAndEndAndStart(middle, end, start))
-					},
-					(false, false) => {
-						Err((Self::MiddleOnly(middle), Self::MiddleAndEndAndStartAndMiddle(end_middle,end, start, start_middle)))
-					}
-				}
-			},
-
-			(a, b) => Err((a,b))
-		}
-	}
+	None
 }
 
-impl TryInto<SplitRead> for PartialSplitRead {
-	type Error = ();
+fn merge_partial_split_read_map(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
+	merge_partial_split_read_map_inner(partial_split_read_map, false)
+}
 
-	fn try_into(self) -> Result<SplitRead, Self::Error> {
-		let records = match self {
-			PartialSplitRead::SingleSplitRead(read) => {
-				vec![read]
-			}
-			PartialSplitRead::StartAndEnd(start, end) => {
-				vec![start, end]
-			}
-			PartialSplitRead::StartMiddleEnd(start, mut middle, end) => {
-				middle.push(start);
-				middle.push(end);
-				middle
-			}
-			_ => {
-				return Err(());
-			}
-		};
+fn merge_partial_split_read_map_inner(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>, removed_supplementary: bool) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
+	let brute_force_unmergeable = true;
 
-		Ok(SplitRead::from(records))
+	let mut completed_split_reads: Vec<PartialSplitRead> = vec![];
+
+	let mut dropped_no_next = 0usize;
+	let mut dropped_missing_info = 0usize;
+	let mut dropped_unmergeable = 0usize;
+	let mut dropped_supplementary = 0usize;
+
+	loop {
+		if partial_split_read_map.is_empty() { break; }
+
+		let (pair, all_no_next, all_missing_chain) = get_next_pair(partial_split_read_map);
+
+		match pair {
+			None => {
+				let mut count = 0;
+				for (_, value) in partial_split_read_map.iter_mut() {
+					count += value.len();
+				}
+
+				//let read = partial_split_read_map.values().next().unwrap().first().unwrap();
+				//let qname = read.get_name();
+				//let tlen = read.get_template_length();
+
+				if removed_supplementary {
+					if brute_force_unmergeable {
+						let brute_force_merged = brute_force_merge(partial_split_read_map);
+						match brute_force_merged {
+							Ok(read) => {
+								completed_split_reads.push(read)
+							}
+							Err(count) => {
+								dropped_unmergeable += count;
+							}
+						}
+					}
+					else {
+						if let Some(true) = all_no_next {
+							dropped_no_next += count;
+							//println!("WARN: Template with split reads that have pnext and rnext information that do not have corresponding reads, {} unmergeable reads were dropped, qname {}, tlen: {}", count, qname, tlen);
+						} else if let Some(true) = all_missing_chain {
+							dropped_missing_info += count;
+							//println!("WARN: Template with split reads that do not have pnext or rnext information, {} unmergeable reads were dropped, qname: {}, tlen: {}", count, qname, tlen);
+						} else {
+							dropped_unmergeable += count;
+							//println!("WARN: Template that cannot be solver because of too many overlapping reads, {} unmergeable reads were dropped, qname: {}, tlen: {}", count, qname, tlen);
+						}
+					}
+				}
+				else {
+					dropped_supplementary += remove_supplementary_reads(partial_split_read_map);
+					let (
+						recurse_completed_split_reads,
+						recurse_dropped_no_next,
+						recurse_dropped_missing_info,
+						recurse_dropped_unmergeable,
+						recurse_dropped_supplementary
+					) = merge_partial_split_read_map_inner(partial_split_read_map, true);
+
+					completed_split_reads.extend(recurse_completed_split_reads);
+					dropped_no_next += recurse_dropped_no_next;
+					dropped_missing_info += recurse_dropped_missing_info;
+					dropped_unmergeable += recurse_dropped_unmergeable;
+					dropped_supplementary += recurse_dropped_supplementary;
+				}
+				break;
+			}
+			Some((first_key, second_key)) => {
+				if (first_key.0, first_key.1) == second_key {
+					let mut vec = partial_split_read_map.remove(&(second_key)).unwrap();
+					if vec.len() == 1 {
+						panic!()
+					} else if vec.len() == 2 {
+						let first = vec.remove(first_key.2);
+						let second = vec.remove(0);
+
+						let combined = match PartialSplitRead::combine(first, second) {
+							Ok(split) => {
+								split
+							}
+							Err(_) => {
+								panic!()
+							}
+						};
+
+						if combined.is_complete() {
+							completed_split_reads.push(combined);
+						}
+						else {
+							partial_split_read_map.insert(second_key, vec![combined]);
+						}
+					} else {
+						panic!("")
+					}
+				} else {
+					let mut first_vec = partial_split_read_map.remove(&(first_key.0, first_key.1)).unwrap();
+					let first = first_vec.remove(first_key.2);
+					let mut second_vec = partial_split_read_map.remove(&second_key).unwrap();
+					let second = second_vec.remove(0);
+
+					if !first_vec.is_empty() {
+						partial_split_read_map.insert((first_key.0, first_key.1), first_vec);
+					}
+
+					let combined = match PartialSplitRead::combine(first, second) {
+						Ok(split_read) => {
+							split_read
+						}
+						Err((_first, _second)) => {
+							println!("ERROR: Combine Error");
+							panic!("Combine Error");
+						}
+					};
+
+					if combined.is_complete() {
+						completed_split_reads.push(combined);
+					} else {
+						let start = combined.get_start();
+						let ref_id = combined.get_ref_id();
+
+						if partial_split_read_map.contains_key(&(ref_id, start)) {
+							let records = partial_split_read_map.get_mut(&(ref_id, start)).unwrap();
+							records.push(combined);
+						} else {
+							partial_split_read_map.insert((ref_id, start), vec![combined]);
+						}
+					}
+				}
+			}
+		}
 	}
+
+	return (completed_split_reads, dropped_no_next, dropped_missing_info, dropped_unmergeable, dropped_supplementary);
+}
+
+fn brute_force_merge(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>) -> Result<PartialSplitRead, usize> {
+	let mut record = None;
+
+	let mut combined_count = 0usize;
+
+	while !partial_split_read_map.is_empty() {
+		let first_key = *partial_split_read_map.keys().next().unwrap();
+		let vec = partial_split_read_map.remove(&first_key).unwrap();
+
+		let vec_len = vec.len();
+		for (i, new_record) in vec.into_iter().enumerate() {
+			match record {
+				None => {
+					record = Some(new_record);
+					combined_count += 1;
+				}
+				Some(existing) => {
+					let combined = PartialSplitRead::combine(existing, new_record);
+					match combined {
+						Ok(combined) => {
+							record = Some(combined);
+							combined_count += 1;
+						}
+						Err(_) => {
+							let remaining_record_count = count_remaining_records(partial_split_read_map);
+							let remaining_vec_count = vec_len - i;
+							return Err(combined_count + remaining_record_count + remaining_vec_count);
+						}
+					}
+				}
+			}
+		}
+	}
+
+	let record = record.unwrap();
+
+	return if record.is_complete() {
+		Ok(record)
+	}
+	else {
+		Err(combined_count)
+	}
+
+}
+
+fn count_remaining_records(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRead>>) -> usize {
+	let mut count = 0;
+
+	for (_, vec) in partial_split_read_map {
+		count += vec.len();
+	}
+
+	count
+}
+
+fn get_next_pair(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRead>>) -> (Option<((i32, u32, usize), (i32, u32))>, Option<bool>, Option<bool>) {
+	let mut all_no_next = None;
+	let mut all_missing_chain = None;
+
+	for (key, value) in partial_split_read_map {
+		for (i, read) in value.iter().enumerate() {
+			let p_next = read.get_p_next();
+			let r_next = read.get_r_next();
+
+			if p_next == -1 || r_next == -1 {
+				if let None = all_missing_chain {
+					all_missing_chain = Some(true);
+				}
+				continue;
+			}
+
+			if (r_next, p_next as u32) == (key.0, key.1) {
+				match value.len() {
+					1 => {
+						if let None = all_no_next {
+							all_no_next = Some(true);
+						}
+						continue;
+					}
+					2 => {
+						let pair = Some(((key.0, key.1, i), (key.0, key.1)));
+						return (pair, Some(false), Some(false));
+					}
+					_ => {
+						continue;
+					}
+				}
+			}
+
+			all_missing_chain = Some(false);
+
+			let next = partial_split_read_map.get(&(r_next, p_next as u32));
+
+			let next = match next {
+				None => {
+					if let None = all_no_next {
+						all_no_next = Some(true);
+					}
+					continue;
+				}
+				Some(next) => {
+					all_no_next = Some(false);
+					next
+				}
+			};
+
+			if next.len() > 1 { continue; }
+
+			let pair = Some(((key.0, key.1, i), (r_next, p_next as u32)));
+			return (pair, Some(false), Some(false));
+		}
+	}
+
+	(None, all_no_next, all_missing_chain)
 }
 
 #[derive(Error, Debug)]
@@ -682,7 +423,7 @@ pub enum SplitReadCollectionTryFromAssemblerCollectionError {
 	}
 }
 
-impl TryFrom<PresentationAssemblerCollection> for SplitReadCollection {
+impl TryFrom<PresentationAssemblerCollection> for (SplitReadCollection, usize, usize, usize, usize) {
 	type Error = SplitReadCollectionTryFromAssemblerCollectionError;
 
 	fn try_from(value: PresentationAssemblerCollection) -> Result<Self, Self::Error> {
@@ -690,27 +431,27 @@ impl TryFrom<PresentationAssemblerCollection> for SplitReadCollection {
 
 		let collections = assemblers.into_iter().par_bridge().fold(
 			|| {
-				Ok(Self {
+				Ok((SplitReadCollection {
 					split_reads: vec![]
-				})
+				}, 0usize, 0usize, 0usize, 0usize))
 			},
 			|a,b| {
-				let a = a?;
-				let b = b.try_into().map_err(|source| {
+				let (a1, a2, a3, a4, a5) = a?;
+				let (b1, b2, b3, b4, b5): (SplitReadCollection, usize, usize, usize, usize) = b.try_into().map_err(|source| {
 					SplitReadCollectionTryFromAssemblerCollectionError::FromAssembler {
 						source
 					}
 				})?;
-				Ok(Self::combine(a,b))
+				Ok((SplitReadCollection::combine(a1,b1), a2 + b2, a3 + b3, a4 + b4, a5 + b5))
 			}
-		).collect::<Result<Vec<SplitReadCollection>, SplitReadCollectionTryFromAssemblerCollectionError>>()?;
+		).collect::<Result<Vec<(SplitReadCollection, usize, usize, usize, usize)>, SplitReadCollectionTryFromAssemblerCollectionError>>()?;
 		
 		Ok(collections.into_iter().fold(
-			Self {
+			(SplitReadCollection {
 				split_reads: vec![]
-			},
-			|a,b| {
-				Self::combine(a,b)
+			}, 0usize, 0usize, 0usize, 0usize),
+			|(a1, a2, a3, a4,a5),(b1, b2, b3, b4,b5)| {
+				(SplitReadCollection::combine(a1,b1), a2 + b2, a3 + b3, a4 + b4, a5 + b5)
 			}
 		))
 	}

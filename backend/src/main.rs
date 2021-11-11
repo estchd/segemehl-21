@@ -9,7 +9,6 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 
 use bam::BamReader;
 use console::style;
-use indicatif::{ProgressBar, ProgressStyle};
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use anyhow::{Context};
 
@@ -33,7 +32,7 @@ fn main() -> anyhow::Result<()> {
 
     let bam_path = params.bam_path.as_str();
     let bai_path = params.bai_path;
-    let expected_record_count = params.expected_record_count;
+    let _expected_record_count = params.expected_record_count;
     let bin_size = params.bin_size.unwrap_or(NonZeroU32::new(10000).unwrap());
     let info_dump = params.info_dump;
 
@@ -66,47 +65,19 @@ fn main() -> anyhow::Result<()> {
         style("[2/4]").bold().dim()
     );
 
-    let pb = match expected_record_count {
-        None => {
-            let pb = ProgressBar::new_spinner();
-            pb.set_style(ProgressStyle::default_spinner()
-                .template("{spinner} [{elapsed_precise}] Records read: {pos}")
-                .progress_chars("#>-")
-                .tick_chars("/-\\|"));
-            pb.set_draw_rate(15);
-            pb
-        }
-        Some(expected_count) => {
-            let pb = ProgressBar::new(expected_count as u64);
-            pb.set_style(ProgressStyle::default_bar()
-                .template("{spinner} [{elapsed_precise}] [{wide_bar}] {pos}/{len} ({eta})")
-                .progress_chars("#>-")
-                .tick_chars("/-\\|"));
-            pb.set_draw_rate(15);
-            pb
-        }
-    };
-
     let calculation_data = CalculationData::new(&header, bin_size)
         .context("could not create calculation data")?;
 
     let total_record_stats: (AtomicUsize, AtomicUsize) = (AtomicUsize::new(0), AtomicUsize::new(0));
 
     reader.into_par_iter().filter_map(|item| item.ok()).try_for_each(|record| -> anyhow::Result<()> {
-        let total_records = total_record_stats.0.fetch_add(1, Ordering::Relaxed);
         let _ = total_record_stats.1.fetch_add(get_record_length_on_reference(&record) as usize, Ordering::Relaxed);
 
         calculation_data.add_record(record).context("error adding record")?;
-
-        if total_records % 10000 == 0 {
-            pb.set_position(total_records as u64);
-        }
         Ok(())
     })?;
 
     let (record_count, total_record_length) = (total_record_stats.0.into_inner(), total_record_stats.1.into_inner());
-
-    pb.finish_and_clear();
 
     println!(
         "{} Calculating Statistics...",
@@ -144,22 +115,10 @@ fn main() -> anyhow::Result<()> {
         style("[4/4]").bold().dim()
     );
 
-    let pb = ProgressBar::new(3);
-    pb.set_style(ProgressStyle::default_bar()
-        .template("{spinner} [{elapsed_precise}] [{bar}] {pos}/{len} ({eta})")
-        .progress_chars("#>-")
-        .tick_chars("/-\\|"));
-    pb.enable_steady_tick(60/15);
-
-    pb.set_message("Creating File...");
-
     let error_text = format!("could not create output file at {}", params.output_path.clone());
     let mut out_file = File::create(params.output_path).with_context(|| {
         format!("{}", error_text)
     })?;
-
-    pb.set_position(1);
-    pb.set_message("Serializing Data...");
 
     //TODO Make this a console parameter
     let json = true;
@@ -168,9 +127,6 @@ fn main() -> anyhow::Result<()> {
         let serialized = serde_json::to_string(&presentation_data)
             .context("could not serialize presentation data to json")?;
 
-        pb.set_position(2);
-        pb.set_message("Writing JSON Data...");
-
         out_file.write(serialized.as_bytes())
             .context("could not write serialized data to file")?;
     }
@@ -178,14 +134,9 @@ fn main() -> anyhow::Result<()> {
         let serialized = bincode::serialize(&presentation_data)
             .context("could not serialize presentation data to bincode")?;
 
-        pb.set_position(2);
-        pb.set_message("Writing Bytecode Data...");
-
         out_file.write_all(&serialized)
             .context("could not write serialized data to file")?;
     }
-
-    pb.finish_and_clear();
 
     println!("Finished");
 

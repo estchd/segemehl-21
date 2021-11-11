@@ -21,6 +21,30 @@ pub struct PresentationRecord {
 }
 
 impl PresentationRecord {
+    pub fn new(name: String,
+               flags: PresentationFlags,
+               mapping_quality: u8,
+               length: u32,
+               p_next: i32,
+               start: u32,
+               end: u32,
+               template_length: i32,
+               ref_id: i32,
+               r_next: i32) -> Self {
+        Self {
+            name,
+            flags,
+            mapping_quality,
+            length,
+            p_next,
+            start,
+            end,
+            template_length,
+            ref_id,
+            r_next
+        }
+    }
+
     pub fn get_name(&self) -> String {
         self.name.clone()
     }
@@ -73,12 +97,7 @@ impl From<Record> for PresentationRecord {
         let p_next = record.mate_start();
         let ref_id = record.ref_id();
         let r_next = record.mate_ref_id();
-
-        let mut template_length= record.template_len();
-
-        if flags.get_is_reverse_strand() {
-            template_length = -template_length;
-        }
+        let template_length= record.template_len().abs();
 
         Self {
             name,

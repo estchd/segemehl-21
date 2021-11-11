@@ -4,7 +4,6 @@ use serde_derive::{Deserialize, Serialize};
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::per_reference::single_read::SingleReadPerReferencePresentationData;
 use crate::statistics::calculation::per_reference::PerReferenceCalculationData;
-use indicatif::{ProgressBar, ProgressStyle, MultiProgress};
 use crate::statistics::presentation::binned::map::BinnedStatisticsPresentationMap;
 use crate::statistics::presentation::cigar_operations::CigarOperations;
 use crate::util::get_quality_frequency_map;
@@ -73,43 +72,15 @@ impl PerReferencePresentationData {
         )
     }
 
-    pub fn calculate_from_data(value: PerReferenceCalculationData, mpb: &MultiProgress)
+    pub fn calculate_from_data(value: PerReferenceCalculationData)
         -> PerReferencePresentationData
     {
-        let pb = mpb.add(ProgressBar::new_spinner());
-
-        pb.set_message("Calculating Reference Statistics...");
-        pb.set_prefix("[1/3]");
-        pb.set_style(ProgressStyle::default_bar()
-            .template("{prefix}         {spinner} [{elapsed_precise}] {msg}")
-            .progress_chars("#>-")
-            .tick_chars("/-\\|"));
-        pb.enable_steady_tick(60 / 15);
-
         let reference_name = value.reference_name;
         let reference_length = value.reference_length;
 
-        pb.reset_elapsed();
-        pb.reset_eta();
-
-        pb.set_message("Calculating Reference Single Read Statistics...");
-        pb.set_prefix("[2/3]");
-
         let single_read_data = value.single_read_data.into();
 
-        pb.reset_eta();
-        pb.reset_elapsed();
-
-        pb.set_message("Calculating Reference Split Read Statistics...");
-        pb.set_prefix("[3/3]");
-        pb.set_style(ProgressStyle::default_bar()
-            .template("{prefix}         {spinner} [{elapsed_precise}] {msg}")
-            .progress_chars("#>-")
-            .tick_chars("/-\\|"));
-
         let split_read_data = value.split_read_data.into();
-
-        pb.finish_with_message("Completed, waiting...");
 
         Self {
             reference_name,

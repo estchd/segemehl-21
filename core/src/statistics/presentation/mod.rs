@@ -1,6 +1,5 @@
 use std::convert::{TryFrom, TryInto};
 
-use indicatif::{MultiProgress, ProgressBar, ProgressStyle};
 use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -308,68 +307,61 @@ impl TryFrom<CalculationData> for PresentationData {
     type Error = PresentationDataTryFromError;
 
     fn try_from(value: CalculationData) -> Result<Self, Self::Error> {
-        let mpb = MultiProgress::new();
-
-        let pb = mpb.add(ProgressBar::new(value.per_reference.len() as u64));
-
-        pb.set_message("Calculating Per Reference Statistics...");
-        pb.set_prefix("[1/3]");
-        pb.set_style(ProgressStyle::default_bar()
-            .template("{prefix}     {spinner} [{elapsed_precise}] [{bar}] {pos}/{len} ({eta}) {msg}")
-            .progress_chars("#>-")
-            .tick_chars("/-\\|"));
-        pb.enable_steady_tick(60/15);
 
         let per_reference = value.per_reference
             .into_iter()
             .map(|per_reference| {
-                let value = PerReferencePresentationData::calculate_from_data(per_reference, &mpb);
-                pb.inc(1);
+                let value = PerReferencePresentationData::calculate_from_data(per_reference);
                 value
             })
             .collect::<Vec<PerReferencePresentationData>>();
 
-        pb.reset_elapsed();
-        pb.reset_eta();
-
-        pb.set_message("Calculating Unmapped Statistics...");
-        pb.set_prefix("[2/3]");
-        pb.set_style(ProgressStyle::default_bar()
-            .template("{prefix}     {spinner} [{elapsed_precise}] {msg}")
-            .progress_chars("#>-")
-            .tick_chars("/-\\|"));
-
         let unmapped = value.unmapped.into();
 
-        pb.set_message("Calculating Split Read Statistics...");
-        pb.set_prefix("[3/3]");
-        pb.set_style(ProgressStyle::default_bar()
-            .template("{prefix}     {spinner} [{elapsed_precise}] {msg}")
-            .progress_chars("#>-")
-            .tick_chars("/-\\|"));
-
-        pb.set_message("Collecting Records");
         let record_collection: PresentationRecordCollection = value.split_read.into();
-        pb.set_message("Creating Assemblers");
         let presentation_assembler_collection: PresentationAssemblerCollection = record_collection.try_into()
             .map_err(|source| {
                 PresentationDataTryFromError::AssemblerCollection {
                     source
                 }
             })?;
-        pb.set_message("Assembling Split Reads");
-        let split_read_collection: SplitReadCollection = presentation_assembler_collection.try_into()
+        let (
+            split_read_collection,
+            dropped_no_next,
+            dropped_missing_info,
+            dropped_unmergeable,
+            dropped_supplementary
+        ): (SplitReadCollection, usize, usize, usize, usize)
+            = presentation_assembler_collection.try_into()
             .map_err(|source| {
                 PresentationDataTryFromError::SplitReadCollection {
                     source
                 }
             })?;
-        pb.set_message("Calculating Statistics");
+
+        let total_dropped =
+                dropped_no_next +
+                dropped_unmergeable +
+                dropped_missing_info +
+                dropped_supplementary;
+
+        if total_dropped > 0 {
+            println!("WARN: {} unmergeable reads dropped in total", total_dropped);
+        }
+        if dropped_no_next > 0 {
+            println!("WARN: {} unmergeable reads with missing next read dropped", dropped_no_next);
+        }
+        if dropped_unmergeable > 0 {
+            println!("WARN: {} unsolvable reads dropped", dropped_unmergeable)
+        }
+        if dropped_missing_info > 0 {
+            println!("WARN: {} unmergeable reads with missing next info dropped", dropped_missing_info);
+        }
+        if dropped_supplementary > 0 {
+            println!("WARN: {} supplementary reads dropped", dropped_supplementary);
+        }
+
         let split_read = split_read_collection.into();
-
-        pb.finish_with_message("Completed, waiting...");
-
-        mpb.clear().unwrap();
 
         Ok(Self {
             split_read,

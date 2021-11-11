@@ -6,6 +6,7 @@ use serde_derive::{Serialize,Deserialize};
 
 pub mod collection;
 pub mod statistics;
+pub mod partial;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplitRead {
@@ -61,6 +62,7 @@ impl SplitRead {
 			}
 
 			last_end = Some(current.get_end());
+			forward_index += 1;
 		}
 
 		while reverse_index < self.reverse_strand_records.len() {
@@ -72,6 +74,7 @@ impl SplitRead {
 			}
 
 			last_end = Some(current.get_end());
+			reverse_index += 1;
 		}
 	}
 
@@ -90,7 +93,7 @@ impl SplitRead {
 
 	pub fn get_total_length(&self) -> u32 {
 		let forward_min = self.forward_strand_records
-		                      .get(0)
+		                      .first()
 		                      .map(|record| record.get_start())
 		                      .unwrap_or(0);
 
@@ -100,7 +103,7 @@ impl SplitRead {
 		}
 
 		let reverse_min = self.reverse_strand_records
-		                      .get(0)
+		                      .first()
 		                      .map(|record| record.get_start())
 		                      .unwrap_or(0);
 
@@ -122,6 +125,19 @@ impl SplitRead {
 		let total_length = self.get_total_length();
 
 		(gap_length_map, total_length, split_count, split_count_unmapped)
+	}
+
+	pub fn calculate_statistics_into(&self, gap_length_map: &CalculationFrequencyMap<i64>, total_length_map: &CalculationFrequencyMap<u32>, split_count_map: &CalculationFrequencyMap<usize>, split_count_unmapped_map: &CalculationFrequencyMap<usize>, unmapped_count_map: &CalculationFrequencyMap<usize>) {
+		self.calculate_gap_lengths_into_map(gap_length_map);
+		let total_length = self.get_total_length();
+		let split_count = self.get_split_count(false);
+		let split_count_unmapped = self.get_split_count(true);
+		let unmapped_count = split_count_unmapped - split_count;
+
+		total_length_map.add_entry(total_length);
+		split_count_map.add_entry(split_count);
+		split_count_unmapped_map.add_entry(split_count_unmapped);
+		unmapped_count_map.add_entry(unmapped_count);
 	}
 }
 

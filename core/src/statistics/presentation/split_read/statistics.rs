@@ -1,4 +1,4 @@
-use rayon::iter::{IntoParallelRefIterator, ParallelBridge, ParallelIterator};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
@@ -47,37 +47,21 @@ impl SplitReadStatistics {
 
 impl From<SplitReadCollection> for SplitReadStatistics {
 	fn from(value: SplitReadCollection) -> Self {
-		let statistics: Vec<(PresentationFrequencyMap<i64>, u32, usize, usize)> = value.into_inner().par_iter().map(|item| {
-			item.get_statistics()
-		}).collect();
-
+		println!("Calculating Statistics");
+		let gap_length_map = CalculationFrequencyMap::<i64>::new();
 		let total_length_map = CalculationFrequencyMap::<u32>::new();
 		let split_count_map = CalculationFrequencyMap::<usize>::new();
 		let split_count_unmapped_map = CalculationFrequencyMap::<usize>::new();
 		let unmapped_count_map = CalculationFrequencyMap::<usize>::new();
 
-		let gap_length_maps: Vec<PresentationFrequencyMap<i64>> = statistics.into_iter().par_bridge().fold(
-			|| {
-				PresentationFrequencyMap::<i64>::new()
-			},
-			|a,b| {
-				total_length_map.add_entry(b.1);
-				split_count_map.add_entry(b.2);
-				split_count_unmapped_map.add_entry(b.3);
-				unmapped_count_map.add_entry(b.3 - b.2);
-				PresentationFrequencyMap::merge(&a,&b.0)
-			}
-		).collect();
+		let vec = value.into_inner();
 
-		let gap_length_map = gap_length_maps.into_iter().fold(
-			PresentationFrequencyMap::<i64>::new(),
-			|a,b| {
-				PresentationFrequencyMap::merge(&a,&b)
-			}
-		);
+		vec.into_par_iter().for_each(|item| {
+			item.calculate_statistics_into(&gap_length_map, &total_length_map, &split_count_map, &split_count_unmapped_map, &unmapped_count_map)
+		});
 
 		Self {
-			gap_length_map,
+			gap_length_map: gap_length_map.into(),
 			total_length_map: total_length_map.into(),
 			split_count_map: split_count_map.into(),
 			split_count_unmapped_map: split_count_unmapped_map.into(),
