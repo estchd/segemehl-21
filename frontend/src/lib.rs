@@ -224,7 +224,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
         .get_max_entry()
         .unwrap_or((0,0)).0 as f64;
 
-    let complete_lengths_file_box_plot_entry = boxplot_entry_from_frequency_map(data.get_gap_length_map());
+    let complete_lengths_file_box_plot_entry = boxplot_entry_from_frequency_map(data.get_total_length_map());
 
     let (
         complete_lengths_file_box_min,
@@ -262,7 +262,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
         .get_max_entry()
         .unwrap_or((0,0)).0 as f64;
 
-    let split_counts_file_box_plot_entry = boxplot_entry_from_frequency_map(data.get_gap_length_map());
+    let split_counts_file_box_plot_entry = boxplot_entry_from_frequency_map(data.get_split_count_map());
 
     let (
         split_counts_file_box_min,

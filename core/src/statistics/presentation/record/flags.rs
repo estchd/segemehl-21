@@ -8,7 +8,8 @@ pub struct PresentationFlags {
     is_reverse_strand: bool,
     is_last_mate: bool,
     is_first_mate: bool,
-    is_supplementary: bool
+    is_supplementary: bool,
+    is_next_unmapped: bool,
 }
 
 impl PresentationFlags {
@@ -36,12 +37,19 @@ impl PresentationFlags {
         self.is_supplementary
     }
 
-    pub fn new(is_mapped: bool,
-               is_split: bool,
-               is_reverse_strand: bool,
-               is_last_mate: bool,
-               is_first_mate: bool,
-               is_supplementary: bool) -> Self {
+    pub fn get_is_next_unmapped(&self) -> bool {
+        self.is_next_unmapped
+    }
+
+    pub fn new(
+        is_mapped: bool,
+        is_split: bool,
+        is_reverse_strand: bool,
+        is_last_mate: bool,
+        is_first_mate: bool,
+        is_supplementary: bool,
+        is_next_unmapped: bool
+    ) -> Self {
 
         Self {
             is_mapped,
@@ -49,7 +57,8 @@ impl PresentationFlags {
             is_reverse_strand,
             is_last_mate,
             is_first_mate,
-            is_supplementary
+            is_supplementary,
+            is_next_unmapped
         }
     }
 }
@@ -62,6 +71,7 @@ impl From<Flag> for PresentationFlags {
         let is_last_mate = flags.last_in_pair();
         let is_first_mate = flags.first_in_pair();
         let is_supplementary = flags.is_supplementary();
+        let is_next_unmapped = flags.mate_is_mapped();
 
         Self {
             is_mapped,
@@ -69,7 +79,8 @@ impl From<Flag> for PresentationFlags {
             is_reverse_strand,
             is_last_mate,
             is_first_mate,
-            is_supplementary
+            is_supplementary,
+            is_next_unmapped
         }
     }
 }

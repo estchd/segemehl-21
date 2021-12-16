@@ -78,6 +78,14 @@ impl PresentationData {
         self.split_read.get_split_count_unmapped_map().clone()
     }
 
+    pub fn get_total_length_map(&self) -> PresentationFrequencyMap<u32> {
+        self.split_read.get_total_length_map().clone()
+    }
+
+    pub fn get_split_read_data(&self) -> &SplitReadStatistics {
+        &self.split_read
+    }
+
     pub fn get_complete_quality_frequency_map(&self) -> Vec<(u8,u64)> {
         get_quality_frequency_map(&self.get_complete_quality_frequency())
     }

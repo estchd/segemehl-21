@@ -1,13 +1,17 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use std::sync::Mutex;
-use rayon::iter::{ParallelBridge, ParallelIterator};
+use std::ops::{Deref, DerefMut};
+use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
 use crate::statistics::presentation::assembler::PresentationAssembler;
+use crate::statistics::presentation::record::PresentationRecord;
 use crate::statistics::presentation::split_read::partial::PartialSplitRead;
 use crate::statistics::presentation::split_read::SplitRead;
+
+static REMOVE_SUPPLEMENTARY: bool = false;
+static BRUTE_FORCE_UNMERGEABLE: bool = true;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplitReadCollection {
@@ -23,8 +27,8 @@ impl SplitReadCollection {
 		self.split_reads
 	}
 
-	pub fn combine(mut a: SplitReadCollection, mut b: SplitReadCollection) -> SplitReadCollection {
-		a.split_reads.append(&mut b.split_reads);
+	pub fn combine(mut a: SplitReadCollection, b: SplitReadCollection) -> SplitReadCollection {
+		a.split_reads.extend(b.split_reads);
 
 		Self {
 			split_reads: a.split_reads
@@ -44,19 +48,27 @@ pub enum SplitReadCollectionTryFromAssemblerError {
 	}
 }
 
-impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usize, usize) {
-	type Error = SplitReadCollectionTryFromAssemblerError;
+struct PartialSplitReadMap {
+	inner: HashMap<(i32, u32), Vec<PartialSplitRead>>
+}
 
-	fn try_from(value: PresentationAssembler) -> Result<Self, Self::Error> {
-		let remove_supplementary = false;
+impl Deref for PartialSplitReadMap {
+	type Target = HashMap<(i32, u32), Vec<PartialSplitRead>>;
 
-		let PresentationAssembler {
-			associated_records
-		} = value;
+	fn deref(&self) -> &Self::Target {
+		&self.inner
+	}
+}
 
-		let split_reads: Mutex<Vec<SplitRead>> = Mutex::new(vec![]);
+impl DerefMut for PartialSplitReadMap {
+	fn deref_mut(&mut self) -> &mut Self::Target {
+		&mut self.inner
+	}
+}
 
-		let partial_split_reads: Vec<PartialSplitRead> = associated_records.into_iter().map(|record| {
+impl From<Vec<PresentationRecord>> for PartialSplitReadMap {
+	fn from(value: Vec<PresentationRecord>) -> Self {
+		let partial_split_reads: Vec<PartialSplitRead> = value.into_iter().map(|record| {
 			PartialSplitRead::from_read(record)
 		}).collect();
 
@@ -75,9 +87,25 @@ impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usiz
 			}
 		}
 
+		Self {
+			inner: partial_split_read_map
+		}
+	}
+}
+
+impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usize, usize) {
+	type Error = SplitReadCollectionTryFromAssemblerError;
+
+	fn try_from(value: PresentationAssembler) -> Result<Self, Self::Error> {
+		let PresentationAssembler {
+			associated_records
+		} = value;
+
+		let mut partial_split_read_map = PartialSplitReadMap::from(associated_records);
+
 		let mut supplementary_dropped = 0usize;
 
-		if remove_supplementary {
+		if REMOVE_SUPPLEMENTARY {
 			supplementary_dropped += remove_supplementary_reads(&mut partial_split_read_map);
 		}
 
@@ -91,19 +119,54 @@ impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usiz
 
 		supplementary_dropped += dropped_supplementary;
 
-		for completed_split_read in completed_split_reads {
-			let split_read = completed_split_read.try_into().unwrap();
-			let mut split_reads_lock = split_reads.lock().unwrap();
-			split_reads_lock.push(split_read);
-		}
+		let dropped_supplementary = supplementary_dropped;
+
+		let split_reads: Vec<SplitRead> = completed_split_reads.into_iter().map(|completed_split_read| {
+			completed_split_read.try_into().unwrap()
+		}).collect();
 
 		Ok((SplitReadCollection {
-			split_reads: split_reads.into_inner().unwrap()
-		}, dropped_no_next, dropped_missing_info, dropped_unmergeable, supplementary_dropped))
+			split_reads
+		}, dropped_no_next, dropped_missing_info, dropped_unmergeable, dropped_supplementary))
 	}
 }
 
-fn remove_supplementary_reads(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>) -> usize {
+fn remove_complete_reads(partial_split_read_map: &mut PartialSplitReadMap) -> Vec<PartialSplitRead> {
+	let mut complete_reads = vec![];
+
+	loop {
+		let next_complete_read = find_next_complete_read(partial_split_read_map);
+		match next_complete_read {
+			None => break,
+			Some((key, i)) => {
+				let mut vec = partial_split_read_map.remove(&key).unwrap();
+
+				let read = vec.remove(i);
+
+				if !vec.is_empty() {
+					partial_split_read_map.insert(key, vec);
+				}
+
+				complete_reads.push(read);
+			}
+		}
+	}
+
+	complete_reads
+}
+
+fn find_next_complete_read(partial_split_read_map: &PartialSplitReadMap) -> Option<((i32, u32), usize)> {
+	for (key, vec) in partial_split_read_map.iter() {
+		for (i, read) in vec.iter().enumerate() {
+			if read.is_complete() {
+				return Some((*key, i));
+			}
+		}
+	}
+	None
+}
+
+fn remove_supplementary_reads(partial_split_read_map: &mut PartialSplitReadMap) -> usize {
 	let mut removed_reads = 0usize;
 	loop {
 		let next_supplementary_read = find_next_supplementary_read(partial_split_read_map);
@@ -126,8 +189,8 @@ fn remove_supplementary_reads(partial_split_read_map: &mut HashMap<(i32, u32), V
 	removed_reads
 }
 
-fn find_next_supplementary_read(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRead>>) -> Option<((i32, u32), usize)> {
-	for (key, vec) in partial_split_read_map {
+fn find_next_supplementary_read(partial_split_read_map: &PartialSplitReadMap) -> Option<((i32, u32), usize)> {
+	for (key, vec) in partial_split_read_map.iter() {
 		for (i, read) in vec.iter().enumerate() {
 			if read.is_supplementary() {
 				return Some((*key, i));
@@ -137,148 +200,133 @@ fn find_next_supplementary_read(partial_split_read_map: &HashMap<(i32, u32), Vec
 	None
 }
 
-fn merge_partial_split_read_map(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
+fn merge_partial_split_read_map(partial_split_read_map: &mut PartialSplitReadMap) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
 	merge_partial_split_read_map_inner(partial_split_read_map, false)
 }
 
-fn merge_partial_split_read_map_inner(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>, removed_supplementary: bool) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
-	let brute_force_unmergeable = true;
+fn merge_partial_split_read_map_inner(partial_split_read_map: &mut PartialSplitReadMap, removed_supplementary: bool) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
+	let mut completed_split_reads: Vec<PartialSplitRead> = remove_complete_reads(partial_split_read_map);
 
-	let mut completed_split_reads: Vec<PartialSplitRead> = vec![];
-
-	let mut dropped_no_next = 0usize;
-	let mut dropped_missing_info = 0usize;
-	let mut dropped_unmergeable = 0usize;
-	let mut dropped_supplementary = 0usize;
-
-	loop {
-		if partial_split_read_map.is_empty() { break; }
-
+	while !partial_split_read_map.is_empty() {
 		let (pair, all_no_next, all_missing_chain) = get_next_pair(partial_split_read_map);
 
 		match pair {
-			None => {
-				let mut count = 0;
-				for (_, value) in partial_split_read_map.iter_mut() {
-					count += value.len();
-				}
-
-				//let read = partial_split_read_map.values().next().unwrap().first().unwrap();
-				//let qname = read.get_name();
-				//let tlen = read.get_template_length();
-
-				if removed_supplementary {
-					if brute_force_unmergeable {
-						let brute_force_merged = brute_force_merge(partial_split_read_map);
-						match brute_force_merged {
-							Ok(read) => {
-								completed_split_reads.push(read)
-							}
-							Err(count) => {
-								dropped_unmergeable += count;
-							}
-						}
-					}
-					else {
-						if let Some(true) = all_no_next {
-							dropped_no_next += count;
-							//println!("WARN: Template with split reads that have pnext and rnext information that do not have corresponding reads, {} unmergeable reads were dropped, qname {}, tlen: {}", count, qname, tlen);
-						} else if let Some(true) = all_missing_chain {
-							dropped_missing_info += count;
-							//println!("WARN: Template with split reads that do not have pnext or rnext information, {} unmergeable reads were dropped, qname: {}, tlen: {}", count, qname, tlen);
-						} else {
-							dropped_unmergeable += count;
-							//println!("WARN: Template that cannot be solver because of too many overlapping reads, {} unmergeable reads were dropped, qname: {}, tlen: {}", count, qname, tlen);
-						}
-					}
-				}
-				else {
-					dropped_supplementary += remove_supplementary_reads(partial_split_read_map);
-					let (
-						recurse_completed_split_reads,
-						recurse_dropped_no_next,
-						recurse_dropped_missing_info,
-						recurse_dropped_unmergeable,
-						recurse_dropped_supplementary
-					) = merge_partial_split_read_map_inner(partial_split_read_map, true);
-
-					completed_split_reads.extend(recurse_completed_split_reads);
-					dropped_no_next += recurse_dropped_no_next;
-					dropped_missing_info += recurse_dropped_missing_info;
-					dropped_unmergeable += recurse_dropped_unmergeable;
-					dropped_supplementary += recurse_dropped_supplementary;
-				}
-				break;
-			}
 			Some((first_key, second_key)) => {
-				if (first_key.0, first_key.1) == second_key {
-					let mut vec = partial_split_read_map.remove(&(second_key)).unwrap();
-					if vec.len() == 1 {
-						panic!()
-					} else if vec.len() == 2 {
-						let first = vec.remove(first_key.2);
-						let second = vec.remove(0);
-
-						let combined = match PartialSplitRead::combine(first, second) {
-							Ok(split) => {
-								split
-							}
-							Err(_) => {
-								panic!()
-							}
-						};
-
-						if combined.is_complete() {
-							completed_split_reads.push(combined);
-						}
-						else {
-							partial_split_read_map.insert(second_key, vec![combined]);
-						}
-					} else {
-						panic!("")
-					}
-				} else {
-					let mut first_vec = partial_split_read_map.remove(&(first_key.0, first_key.1)).unwrap();
-					let first = first_vec.remove(first_key.2);
-					let mut second_vec = partial_split_read_map.remove(&second_key).unwrap();
-					let second = second_vec.remove(0);
-
-					if !first_vec.is_empty() {
-						partial_split_read_map.insert((first_key.0, first_key.1), first_vec);
-					}
-
-					let combined = match PartialSplitRead::combine(first, second) {
-						Ok(split_read) => {
-							split_read
-						}
-						Err((_first, _second)) => {
-							println!("ERROR: Combine Error");
-							panic!("Combine Error");
-						}
-					};
-
-					if combined.is_complete() {
-						completed_split_reads.push(combined);
-					} else {
-						let start = combined.get_start();
-						let ref_id = combined.get_ref_id();
-
-						if partial_split_read_map.contains_key(&(ref_id, start)) {
-							let records = partial_split_read_map.get_mut(&(ref_id, start)).unwrap();
-							records.push(combined);
-						} else {
-							partial_split_read_map.insert((ref_id, start), vec![combined]);
-						}
-					}
+				let completed_read = merge_pair(first_key, second_key, partial_split_read_map);
+				if let Some(completed) = completed_read {
+					completed_split_reads.push(completed);
 				}
+			}
+			None => {
+				let (completed, no_next, missing_info, unmergeable, supplementary) =
+					handle_unmergeables(partial_split_read_map, all_no_next, all_missing_chain,removed_supplementary);
+				completed_split_reads.extend(completed);
+				return (completed_split_reads, no_next, missing_info, unmergeable, supplementary);
 			}
 		}
 	}
 
-	return (completed_split_reads, dropped_no_next, dropped_missing_info, dropped_unmergeable, dropped_supplementary);
+	return (completed_split_reads, 0, 0, 0, 0);
 }
 
-fn brute_force_merge(partial_split_read_map: &mut HashMap<(i32, u32), Vec<PartialSplitRead>>) -> Result<PartialSplitRead, usize> {
+fn merge_pair(first_key: (i32, u32, usize), second_key: (i32, u32), partial_split_read_map: &mut PartialSplitReadMap) -> Option<PartialSplitRead> {
+	if (first_key.0, first_key.1) == second_key {
+		merge_pair_at_same_position(first_key, partial_split_read_map)
+	}
+	else {
+		merge_pair_at_different_positions(first_key, second_key, partial_split_read_map)
+	}
+}
+
+fn merge_pair_at_same_position(key: (i32, u32, usize), partial_split_read_map: &mut PartialSplitReadMap) -> Option<PartialSplitRead> {
+	let mut vec = partial_split_read_map.remove(&(key.0, key.1)).unwrap();
+	let first = vec.remove(key.2);
+	let second = vec.remove(0);
+
+	let combined = PartialSplitRead::combine(first, second).unwrap();
+
+	if combined.is_complete() {
+		return Some(combined);
+	}
+	else {
+		partial_split_read_map.insert((key.0, key.1), vec![combined]);
+	}
+	return None;
+}
+
+fn merge_pair_at_different_positions(first_key: (i32, u32, usize), second_key: (i32, u32), partial_split_read_map: &mut PartialSplitReadMap) -> Option<PartialSplitRead> {
+	let mut first_vec = partial_split_read_map.remove(&(first_key.0, first_key.1)).unwrap();
+	let first = first_vec.remove(first_key.2);
+	let mut second_vec = partial_split_read_map.remove(&second_key).unwrap();
+	let second = second_vec.remove(0);
+
+	if !first_vec.is_empty() {
+		partial_split_read_map.insert((first_key.0, first_key.1), first_vec);
+	}
+
+	let combined = PartialSplitRead::combine(first, second).unwrap();
+
+	if combined.is_complete() {
+		return Some(combined);
+	}
+
+	let start = combined.get_start();
+	let ref_id = combined.get_ref_id();
+
+	if partial_split_read_map.contains_key(&(ref_id, start)) {
+		let records = partial_split_read_map.get_mut(&(ref_id, start)).unwrap();
+		records.push(combined);
+	} else {
+		partial_split_read_map.insert((ref_id, start), vec![combined]);
+	}
+
+	None
+}
+
+fn handle_unmergeables(partial_split_read_map: &mut PartialSplitReadMap, all_no_next: bool, all_missing_chain: bool, has_recursed: bool) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
+	let mut count = 0;
+	for (_, value) in partial_split_read_map.iter_mut() {
+		count += value.len();
+	}
+
+	if has_recursed {
+		handle_unmergeables_no_recurse(partial_split_read_map, all_no_next, all_missing_chain, count)
+	}
+	else {
+		handle_unmergeables_recurse(partial_split_read_map)
+	}
+}
+
+fn handle_unmergeables_recurse(partial_split_read_map: &mut PartialSplitReadMap) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
+	let dropped_supplementary = remove_supplementary_reads(partial_split_read_map);
+	let (
+		completed_split_reads,
+		dropped_no_next,
+		dropped_missing_info,
+		dropped_unmergeable,
+		recurse_dropped_supplementary
+	) = merge_partial_split_read_map_inner(partial_split_read_map, true);
+
+	(completed_split_reads, dropped_no_next, dropped_missing_info, dropped_unmergeable, dropped_supplementary + recurse_dropped_supplementary)
+}
+
+fn handle_unmergeables_no_recurse(partial_split_read_map: &mut PartialSplitReadMap, all_no_next: bool, all_missing_chain: bool, count: usize) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
+	if BRUTE_FORCE_UNMERGEABLE {
+		if let Ok(read) = brute_force_merge(partial_split_read_map) {
+			return (vec![read], 0, 0, 0, 0);
+		}
+	}
+
+	if all_no_next {
+		(vec![], count, 0, 0, 0)
+	} else if all_missing_chain {
+		(vec![], 0, count, 0, 0)
+	} else {
+		(vec![], 0, 0, count, 0)
+	}
+}
+
+fn brute_force_merge(partial_split_read_map: &mut PartialSplitReadMap) -> Result<PartialSplitRead, usize> {
 	let mut record = None;
 
 	let mut combined_count = 0usize;
@@ -301,7 +349,7 @@ fn brute_force_merge(partial_split_read_map: &mut HashMap<(i32, u32), Vec<Partia
 							record = Some(combined);
 							combined_count += 1;
 						}
-						Err(_) => {
+						Err((_,_)) => {
 							let remaining_record_count = count_remaining_records(partial_split_read_map);
 							let remaining_vec_count = vec_len - i;
 							return Err(combined_count + remaining_record_count + remaining_vec_count);
@@ -311,10 +359,9 @@ fn brute_force_merge(partial_split_read_map: &mut HashMap<(i32, u32), Vec<Partia
 			}
 		}
 	}
-
 	let record = record.unwrap();
 
-	return if record.is_complete() {
+	return if record.is_complete() || record.is_next_unmapped() {
 		Ok(record)
 	}
 	else {
@@ -323,21 +370,21 @@ fn brute_force_merge(partial_split_read_map: &mut HashMap<(i32, u32), Vec<Partia
 
 }
 
-fn count_remaining_records(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRead>>) -> usize {
+fn count_remaining_records(partial_split_read_map: &PartialSplitReadMap) -> usize {
 	let mut count = 0;
 
-	for (_, vec) in partial_split_read_map {
+	for (_, vec) in partial_split_read_map.iter() {
 		count += vec.len();
 	}
 
 	count
 }
 
-fn get_next_pair(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRead>>) -> (Option<((i32, u32, usize), (i32, u32))>, Option<bool>, Option<bool>) {
+fn get_next_pair(partial_split_read_map: &PartialSplitReadMap) -> (Option<((i32, u32, usize), (i32, u32))>, bool, bool) {
 	let mut all_no_next = None;
 	let mut all_missing_chain = None;
 
-	for (key, value) in partial_split_read_map {
+	for (key, value) in partial_split_read_map.iter() {
 		for (i, read) in value.iter().enumerate() {
 			let p_next = read.get_p_next();
 			let r_next = read.get_r_next();
@@ -359,7 +406,7 @@ fn get_next_pair(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRe
 					}
 					2 => {
 						let pair = Some(((key.0, key.1, i), (key.0, key.1)));
-						return (pair, Some(false), Some(false));
+						return (pair, false, false);
 					}
 					_ => {
 						continue;
@@ -387,11 +434,11 @@ fn get_next_pair(partial_split_read_map: &HashMap<(i32, u32), Vec<PartialSplitRe
 			if next.len() > 1 { continue; }
 
 			let pair = Some(((key.0, key.1, i), (r_next, p_next as u32)));
-			return (pair, Some(false), Some(false));
+			return (pair, false, false);
 		}
 	}
 
-	(None, all_no_next, all_missing_chain)
+	(None, all_no_next.unwrap_or(false), all_missing_chain.unwrap_or(false))
 }
 
 #[derive(Error, Debug)]
@@ -408,7 +455,7 @@ impl TryFrom<PresentationAssemblerCollection> for (SplitReadCollection, usize, u
 	fn try_from(value: PresentationAssemblerCollection) -> Result<Self, Self::Error> {
 		let assemblers = value.into_inner();
 
-		let collections = assemblers.into_iter().par_bridge().fold(
+		let collections = assemblers.into_par_iter().fold(
 			|| {
 				Ok((SplitReadCollection {
 					split_reads: vec![]

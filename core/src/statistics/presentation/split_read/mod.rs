@@ -12,7 +12,8 @@ pub mod partial;
 pub struct SplitRead {
 	forward_strand_records: Vec<PresentationRecord>,
 	reverse_strand_records: Vec<PresentationRecord>,
-	unmapped_records: Vec<PresentationRecord>
+	unmapped_records: Vec<PresentationRecord>,
+	min_unmapped_records: usize
 }
 
 impl SplitRead {
@@ -84,7 +85,7 @@ impl SplitRead {
 				self.reverse_strand_records.len();
 
 		return if include_unmapped {
-			mapped_splits + self.unmapped_records.len()
+			mapped_splits + self.unmapped_records.len() + self.min_unmapped_records
 		}
 		else {
 			mapped_splits
@@ -131,6 +132,11 @@ impl SplitRead {
 		self.calculate_gap_lengths_into_map(gap_length_map);
 		let total_length = self.get_total_length();
 		let split_count = self.get_split_count(false);
+
+		if split_count > 10 {
+			println!("{}", split_count);
+		}
+
 		let split_count_unmapped = self.get_split_count(true);
 		let unmapped_count = split_count_unmapped - split_count;
 
@@ -141,8 +147,9 @@ impl SplitRead {
 	}
 }
 
-impl From<Vec<PresentationRecord>> for SplitRead {
-	fn from(associated_records: Vec<PresentationRecord>) -> Self {
+impl From<(Vec<PresentationRecord>, usize)> for SplitRead {
+	fn from(records: (Vec<PresentationRecord>, usize)) -> Self {
+		let (associated_records, min_unmapped_records) = records;
 		let mut forward_strand_records: Vec<PresentationRecord> = Vec::new();
 		let mut reverse_strand_records: Vec<PresentationRecord> = Vec::new();
 		let mut unmapped_records: Vec<PresentationRecord> = Vec::new();
@@ -187,7 +194,8 @@ impl From<Vec<PresentationRecord>> for SplitRead {
 		Self {
 			forward_strand_records,
 			reverse_strand_records,
-			unmapped_records
+			unmapped_records,
+			min_unmapped_records
 		}
 	}
 }

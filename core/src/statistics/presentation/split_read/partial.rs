@@ -2,6 +2,7 @@ use std::convert::TryInto;
 use crate::statistics::presentation::record::PresentationRecord;
 use crate::statistics::presentation::split_read::SplitRead;
 
+#[derive(Debug, Clone)]
 pub enum PartialSplitRead {
 	SingleSplitRead(PresentationRecord),
 	StartOnly(PresentationRecord),
@@ -241,6 +242,29 @@ impl PartialSplitRead {
 			PartialSplitRead::StartAndEnd(_, _) |
 			PartialSplitRead::StartMiddleEnd(_, _, _) => {
 				true
+			}
+		}
+	}
+
+	pub fn is_next_unmapped(&self) -> bool {
+		match self {
+			PartialSplitRead::StartMiddleEnd(_, _, _) |
+			PartialSplitRead::StartAndEnd(_, _) |
+			PartialSplitRead::StartOnly(_) => {
+				false
+			}
+			PartialSplitRead::EndOnly(read) |
+			PartialSplitRead::MiddleAndEnd(_, read) |
+			PartialSplitRead::MiddleAndEndAndStart(_, _, read) |
+			PartialSplitRead::EndAndStart(_, read) |
+			PartialSplitRead::SingleSplitRead(read) => {
+				read.get_flags().get_is_next_unmapped()
+			}
+			PartialSplitRead::MiddleOnly(middle) |
+			PartialSplitRead::StartAndMiddle(_, middle) |
+			PartialSplitRead::EndAndStartAndMiddle(_, _, middle) |
+			PartialSplitRead::MiddleAndEndAndStartAndMiddle(_, _, _, middle) => {
+				middle.last().unwrap().get_flags().get_is_next_unmapped()
 			}
 		}
 	}
@@ -617,18 +641,54 @@ impl TryInto<SplitRead> for PartialSplitRead {
 	fn try_into(self) -> Result<SplitRead, Self::Error> {
 		let records = match self {
 			PartialSplitRead::SingleSplitRead(read) => {
-				vec![read]
+				(vec![read], 0)
 			}
 			PartialSplitRead::StartAndEnd(start, end) => {
-				vec![start, end]
+				(vec![start, end], 0)
 			}
 			PartialSplitRead::StartMiddleEnd(start, mut middle, end) => {
 				middle.push(start);
 				middle.push(end);
-				middle
+				(middle, 0)
 			}
-			_ => {
-				return Err(());
+			PartialSplitRead::StartOnly(read) |
+			PartialSplitRead::EndOnly(read) => {
+				(vec![read], 0)
+			}
+			PartialSplitRead::MiddleOnly(middle) => {
+				(middle, 2)
+			}
+			PartialSplitRead::MiddleAndEnd(mut middle, end) => {
+				middle.push(end);
+				(middle, 1)
+			}
+			PartialSplitRead::MiddleAndEndAndStart(middle, end, start)  => {
+				let mut vec = vec![start];
+				vec.extend(middle);
+				vec.push(end);
+
+				(vec, 1)
+			}
+			PartialSplitRead::EndAndStart(end, start) => {
+				(vec![start, end], 1)
+			}
+			PartialSplitRead::StartAndMiddle(start, middle) => {
+				let mut vec = vec![start];
+				vec.extend(middle);
+				(vec, 1)
+			}
+			PartialSplitRead::EndAndStartAndMiddle(end, start, middle) => {
+				let mut vec = vec![start];
+				vec.extend(middle);
+				vec.push(end);
+				(vec, 1)
+			}
+			PartialSplitRead::MiddleAndEndAndStartAndMiddle(end_middle, end, start, start_middle) => {
+				let mut vec = vec![start];
+				vec.extend(start_middle);
+				vec.extend(end_middle);
+				vec.push(end);
+				(vec, 1)
 			}
 		};
 
@@ -661,6 +721,8 @@ mod partial_split_read_tests {
 		is_last_mate: bool,
 		#[values(true, false)]
 		is_supplementary: bool,
+		#[values(true, false)]
+		is_next_unmapped: bool,
 		#[case]
 		expected_type: &str
 	) {
@@ -670,7 +732,8 @@ mod partial_split_read_tests {
 			is_reverse_strand,
 			is_last_mate,
 			is_first_mate,
-			is_supplementary
+			is_supplementary,
+			is_next_unmapped
 		);
 		let read = PresentationRecord::new(
 			"test".to_string(),
