@@ -1,8 +1,7 @@
 use std::collections::HashMap;
 use std::convert::{TryFrom, TryInto};
-use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Mutex;
-use rayon::iter::{IntoParallelIterator, ParallelBridge, ParallelIterator};
+use rayon::iter::{ParallelBridge, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use thiserror::Error;
 use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
@@ -52,75 +51,55 @@ impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usiz
 		let remove_supplementary = false;
 
 		let PresentationAssembler {
-			template_length_map
+			associated_records
 		} = value;
 
 		let split_reads: Mutex<Vec<SplitRead>> = Mutex::new(vec![]);
 
-		let missing_info_dropped_read = AtomicUsize::new(0usize);
-		let missing_next_dropped_read = AtomicUsize::new(0usize);
-		let unmergeable_dropped_read = AtomicUsize::new(0usize);
-		let supplementary_dropped_read = AtomicUsize::new(0usize);
+		let partial_split_reads: Vec<PartialSplitRead> = associated_records.into_iter().map(|record| {
+			PartialSplitRead::from_read(record)
+		}).collect();
 
-		template_length_map.into_par_iter().try_for_each(|template_length| {
-			let (_, associated_records) = template_length;
+		let mut partial_split_read_map: HashMap<(i32, u32), Vec<PartialSplitRead>> = HashMap::new();
 
-			let partial_split_reads: Vec<PartialSplitRead> = associated_records.into_iter().map(|record| {
-				PartialSplitRead::from_read(record)
-			}).collect();
+		for partial_split_read in partial_split_reads {
+			let ref_id = partial_split_read.get_ref_id();
+			let start = partial_split_read.get_start();
 
-			let mut partial_split_read_map: HashMap<(i32, u32), Vec<PartialSplitRead>> = HashMap::new();
-
-			for partial_split_read in partial_split_reads {
-				let ref_id = partial_split_read.get_ref_id();
-				let start = partial_split_read.get_start();
-
-				if partial_split_read_map.contains_key(&(ref_id, start)) {
-					let records = partial_split_read_map.get_mut(&(ref_id, start)).unwrap();
-					records.push(partial_split_read);
-				}
-				else {
-					partial_split_read_map.insert((ref_id, start), vec![partial_split_read]);
-				}
+			if partial_split_read_map.contains_key(&(ref_id, start)) {
+				let records = partial_split_read_map.get_mut(&(ref_id, start)).unwrap();
+				records.push(partial_split_read);
 			}
-
-			let mut supplementary_dropped = 0usize;
-
-			if remove_supplementary {
-				supplementary_dropped += remove_supplementary_reads(&mut partial_split_read_map);
+			else {
+				partial_split_read_map.insert((ref_id, start), vec![partial_split_read]);
 			}
+		}
 
-			let (
-				completed_split_reads,
-				dropped_no_next,
-				dropped_missing_info,
-				dropped_unmergeable,
-				dropped_supplementary
-			) = merge_partial_split_read_map(&mut partial_split_read_map);
+		let mut supplementary_dropped = 0usize;
 
-			supplementary_dropped += dropped_supplementary;
+		if remove_supplementary {
+			supplementary_dropped += remove_supplementary_reads(&mut partial_split_read_map);
+		}
 
-			missing_info_dropped_read.fetch_add(dropped_missing_info, Ordering::Relaxed);
-			unmergeable_dropped_read.fetch_add(dropped_unmergeable, Ordering::Relaxed);
-			missing_next_dropped_read.fetch_add(dropped_no_next, Ordering::Relaxed);
-			supplementary_dropped_read.fetch_add(supplementary_dropped, Ordering::Relaxed);
+		let (
+			completed_split_reads,
+			dropped_no_next,
+			dropped_missing_info,
+			dropped_unmergeable,
+			dropped_supplementary
+		) = merge_partial_split_read_map(&mut partial_split_read_map);
 
-			for completed_split_read in completed_split_reads {
-				let split_read = completed_split_read.try_into().unwrap();
-				let mut split_reads_lock = split_reads.lock().unwrap();
-				split_reads_lock.push(split_read);
-			}
-			Ok(())
-		})?;
+		supplementary_dropped += dropped_supplementary;
 
-		let dropped_no_next = missing_next_dropped_read.into_inner();
-		let dropped_unmergeable = unmergeable_dropped_read.into_inner();
-		let dropped_missing_info = missing_info_dropped_read.into_inner();
-		let dropped_supplementary = supplementary_dropped_read.into_inner();
+		for completed_split_read in completed_split_reads {
+			let split_read = completed_split_read.try_into().unwrap();
+			let mut split_reads_lock = split_reads.lock().unwrap();
+			split_reads_lock.push(split_read);
+		}
 
 		Ok((SplitReadCollection {
 			split_reads: split_reads.into_inner().unwrap()
-		}, dropped_no_next, dropped_missing_info, dropped_unmergeable, dropped_supplementary))
+		}, dropped_no_next, dropped_missing_info, dropped_unmergeable, supplementary_dropped))
 	}
 }
 

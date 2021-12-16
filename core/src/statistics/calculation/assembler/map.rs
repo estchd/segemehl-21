@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::sync::{Mutex, RwLock};
 
 use bam::Record;
-use crate::util::get_record_name_as_string;
+use crate::util::{get_record_t_len};
 
 #[derive(Debug)]
 pub struct CalculationAssemblerMap {
-    pub(crate) map: RwLock<HashMap<String, Mutex<Vec<Record>>>>
+    pub(crate) map: RwLock<HashMap<u32, Mutex<Vec<Record>>>>
 }
 
 impl CalculationAssemblerMap {
@@ -17,30 +17,30 @@ impl CalculationAssemblerMap {
     }
 
     pub fn add_record(&self, record: Record) {
-        let name = get_record_name_as_string(&record);
+        let t_len = get_record_t_len(&record);
 
         let read_lock = self.map.read().unwrap();
-        if read_lock.contains_key(&name) {
-            let mut template_records = read_lock.get(&name).unwrap().lock().unwrap();
+        if read_lock.contains_key(&t_len) {
+            let mut template_records = read_lock.get(&t_len).unwrap().lock().unwrap();
 
             template_records.push(record);
         }
         else {
             drop(read_lock);
-            self.insert_new(name, record);
+            self.insert_new(t_len, record);
         }
     }
 
-    fn insert_new(&self, name: String, record: Record) {
+    fn insert_new(&self, t_len: u32, record: Record) {
         let mut write_lock = self.map.write().unwrap();
 
-        if write_lock.contains_key(&name) {
-            let mut template_records = write_lock.get(&name).unwrap().lock().unwrap();
+        if write_lock.contains_key(&t_len) {
+            let mut template_records = write_lock.get(&t_len).unwrap().lock().unwrap();
 
             template_records.push(record);
         }
         else {
-            write_lock.insert(name, Mutex::new(vec![record]));
+            write_lock.insert(t_len, Mutex::new(vec![record]));
         }
     }
 }

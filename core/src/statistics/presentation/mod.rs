@@ -4,8 +4,7 @@ use serde_derive::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::statistics::calculation::CalculationData;
-use crate::statistics::presentation::assembler::collection::{PresentationAssemblerCollection, PresentationAssemblerCollectionTryFromError};
-use crate::statistics::presentation::assembler::presentation_record_collection::PresentationRecordCollection;
+use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
 use crate::statistics::presentation::cigar_operations::CigarOperations;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::per_reference::PerReferencePresentationData;
@@ -293,10 +292,6 @@ impl PresentationData {
 
 #[derive(Error, Debug)]
 pub enum PresentationDataTryFromError {
-    #[error("could not convert presentation record collection into presentation assembler")]
-    AssemblerCollection {
-        source: PresentationAssemblerCollectionTryFromError
-    },
     #[error("could not convert presentation assembler into split read collection")]
     SplitReadCollection {
         source: SplitReadCollectionTryFromAssemblerCollectionError
@@ -318,13 +313,7 @@ impl TryFrom<CalculationData> for PresentationData {
 
         let unmapped = value.unmapped.into();
 
-        let record_collection: PresentationRecordCollection = value.split_read.into();
-        let presentation_assembler_collection: PresentationAssemblerCollection = record_collection.try_into()
-            .map_err(|source| {
-                PresentationDataTryFromError::AssemblerCollection {
-                    source
-                }
-            })?;
+        let presentation_assembler_collection: PresentationAssemblerCollection = value.split_read.into();
         let (
             split_read_collection,
             dropped_no_next,

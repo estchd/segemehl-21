@@ -15,7 +15,7 @@ pub struct PresentationRecord {
     p_next: i32,
     start: u32,
     end: u32,
-    template_length: i32,
+    template_length: u32,
     ref_id: i32,
     r_next: i32
 }
@@ -28,7 +28,7 @@ impl PresentationRecord {
                p_next: i32,
                start: u32,
                end: u32,
-               template_length: i32,
+               template_length: u32,
                ref_id: i32,
                r_next: i32) -> Self {
         Self {
@@ -73,7 +73,7 @@ impl PresentationRecord {
         self.p_next
     }
 
-    pub fn get_template_length(&self) -> i32 {
+    pub fn get_template_length(&self) -> u32 {
         self.template_length
     }
 
@@ -97,7 +97,7 @@ impl From<Record> for PresentationRecord {
         let p_next = record.mate_start();
         let ref_id = record.ref_id();
         let r_next = record.mate_ref_id();
-        let template_length= record.template_len().abs();
+        let template_length= record.template_len().abs() as u32;
 
         Self {
             name,

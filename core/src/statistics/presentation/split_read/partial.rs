@@ -58,7 +58,7 @@ impl PartialSplitRead {
 		}
 	}
 
-	pub fn get_template_length(&self) -> i32 {
+	pub fn get_template_length(&self) -> u32 {
 		match self {
 			PartialSplitRead::SingleSplitRead(read) |
 			PartialSplitRead::StartOnly(read) |

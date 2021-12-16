@@ -59,6 +59,10 @@ pub fn get_record_length_sequence(record: &Record) -> u32 {
 	record.query_len()
 }
 
+pub fn get_record_t_len(record: &Record) -> u32 {
+	record.template_len().abs() as u32
+}
+
 pub fn get_record_mapping_quality(record: &Record) -> u8 {
 	record.mapq()
 }

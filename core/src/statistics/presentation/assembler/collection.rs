@@ -1,9 +1,8 @@
-use std::convert::TryFrom;
 use rayon::iter::IntoParallelIterator;
 use rayon::iter::ParallelIterator;
-use thiserror::Error;
-use crate::statistics::presentation::assembler::{PresentationAssembler, PresentationAssemblerTryFromError};
-use crate::statistics::presentation::assembler::presentation_record_collection::PresentationRecordCollection;
+use crate::statistics::calculation::assembler::map::CalculationAssemblerMap;
+use crate::statistics::presentation::assembler::PresentationAssembler;
+use crate::statistics::presentation::record::PresentationRecord;
 
 pub struct PresentationAssemblerCollection {
     assemblers: Vec<PresentationAssembler>
@@ -19,36 +18,21 @@ impl PresentationAssemblerCollection {
 	}
 }
 
-#[derive(Error, Debug)]
-pub enum PresentationAssemblerCollectionTryFromError {
-	#[error("could not assemble presentation record vector")]
-	PresentationAssembler {
-		source: PresentationAssemblerTryFromError
-	}
-}
+impl From<CalculationAssemblerMap> for PresentationAssemblerCollection {
+	fn from(value: CalculationAssemblerMap) -> Self {
+		let map = value.map.into_inner().unwrap();
 
-impl TryFrom<PresentationRecordCollection> for PresentationAssemblerCollection {
-	type Error = PresentationAssemblerCollectionTryFromError;
+		let assemblers = map.into_par_iter()
+			.map(|(_, value)| {
+				let values = value.into_inner().unwrap();
+				let values: Vec<PresentationRecord> = values.into_par_iter().map(|item| item.into()).collect();
 
-	fn try_from(value: PresentationRecordCollection) -> Result<Self, Self::Error> {
-		let PresentationRecordCollection {
-			map
-		} = value;
-
-		let assemblers: Vec<PresentationAssembler> = map
-			.into_par_iter()
-			.map(|(_,item)| {
-				PresentationAssembler::try_from(item)
+				values.into()
 			})
-			.collect::<Result<Vec<PresentationAssembler>, PresentationAssemblerTryFromError>>()
-			.map_err(|source| {
-				PresentationAssemblerCollectionTryFromError::PresentationAssembler {
-					source
-				}
-			})?;
+			.collect();
 
-		Ok(PresentationAssemblerCollection {
+		Self {
 			assemblers
-		})
+		}
 	}
 }
