@@ -10,6 +10,10 @@ pub struct PresentationFlags {
     is_first_mate: bool,
     is_supplementary: bool,
     is_next_unmapped: bool,
+    is_next_reverse_strand: bool,
+    is_secondary: bool,
+    is_duplicate: bool,
+    fails_quality_checks: bool,
 }
 
 impl PresentationFlags {
@@ -48,7 +52,11 @@ impl PresentationFlags {
         is_last_mate: bool,
         is_first_mate: bool,
         is_supplementary: bool,
-        is_next_unmapped: bool
+        is_next_unmapped: bool,
+        is_next_reverse_strand: bool,
+        is_secondary: bool,
+        is_duplicate: bool,
+        fails_quality_checks: bool
     ) -> Self {
 
         Self {
@@ -58,7 +66,11 @@ impl PresentationFlags {
             is_last_mate,
             is_first_mate,
             is_supplementary,
-            is_next_unmapped
+            is_next_unmapped,
+            is_next_reverse_strand,
+            is_secondary,
+            is_duplicate,
+            fails_quality_checks
         }
     }
 }
@@ -68,10 +80,14 @@ impl From<Flag> for PresentationFlags {
         let is_mapped = flags.is_mapped();
         let is_split = flags.is_paired();
         let is_reverse_strand = flags.is_reverse_strand();
+        let is_next_reverse_strand = flags.mate_is_reverse_strand();
         let is_last_mate = flags.last_in_pair();
         let is_first_mate = flags.first_in_pair();
+        let is_secondary = flags.is_secondary();
         let is_supplementary = flags.is_supplementary();
-        let is_next_unmapped = flags.mate_is_mapped();
+        let is_next_unmapped = !flags.mate_is_mapped();
+        let is_duplicate = flags.is_duplicate();
+        let fails_quality_checks = flags.fails_quality_controls();
 
         Self {
             is_mapped,
@@ -80,7 +96,11 @@ impl From<Flag> for PresentationFlags {
             is_last_mate,
             is_first_mate,
             is_supplementary,
-            is_next_unmapped
+            is_next_unmapped,
+            is_next_reverse_strand,
+            is_secondary,
+            is_duplicate,
+            fails_quality_checks
         }
     }
 }

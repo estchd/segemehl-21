@@ -7,11 +7,9 @@ use thiserror::Error;
 use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
 use crate::statistics::presentation::assembler::PresentationAssembler;
 use crate::statistics::presentation::record::PresentationRecord;
+use crate::statistics::presentation::split_read::partial::map::PartialSplitReadMap;
 use crate::statistics::presentation::split_read::partial::PartialSplitRead;
 use crate::statistics::presentation::split_read::SplitRead;
-
-static REMOVE_SUPPLEMENTARY: bool = false;
-static BRUTE_FORCE_UNMERGEABLE: bool = true;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplitReadCollection {
@@ -39,58 +37,9 @@ impl SplitReadCollection {
 #[derive(Error, Debug)]
 pub enum SplitReadCollectionTryFromAssemblerError {
 	#[error("too many overlapping records, more than one possible solution")]
-	Unsolvable {
-
-	},
+	Unsolvable {},
 	#[error("couldn't find next in sequence")]
-	Incomplete {
-
-	}
-}
-
-struct PartialSplitReadMap {
-	inner: HashMap<(i32, u32), Vec<PartialSplitRead>>
-}
-
-impl Deref for PartialSplitReadMap {
-	type Target = HashMap<(i32, u32), Vec<PartialSplitRead>>;
-
-	fn deref(&self) -> &Self::Target {
-		&self.inner
-	}
-}
-
-impl DerefMut for PartialSplitReadMap {
-	fn deref_mut(&mut self) -> &mut Self::Target {
-		&mut self.inner
-	}
-}
-
-impl From<Vec<PresentationRecord>> for PartialSplitReadMap {
-	fn from(value: Vec<PresentationRecord>) -> Self {
-		let partial_split_reads: Vec<PartialSplitRead> = value.into_iter().map(|record| {
-			PartialSplitRead::from_read(record)
-		}).collect();
-
-		let mut partial_split_read_map: HashMap<(i32, u32), Vec<PartialSplitRead>> = HashMap::new();
-
-		for partial_split_read in partial_split_reads {
-			let ref_id = partial_split_read.get_ref_id();
-			let start = partial_split_read.get_start();
-
-			if partial_split_read_map.contains_key(&(ref_id, start)) {
-				let records = partial_split_read_map.get_mut(&(ref_id, start)).unwrap();
-				records.push(partial_split_read);
-			}
-			else {
-				partial_split_read_map.insert((ref_id, start), vec![partial_split_read]);
-			}
-		}
-
-		Self {
-			inner: partial_split_read_map
-		}
-	}
+	Incomplete {}
 }
 
 impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usize, usize) {
@@ -104,10 +53,6 @@ impl TryFrom<PresentationAssembler> for (SplitReadCollection, usize, usize, usiz
 		let mut partial_split_read_map = PartialSplitReadMap::from(associated_records);
 
 		let mut supplementary_dropped = 0usize;
-
-		if REMOVE_SUPPLEMENTARY {
-			supplementary_dropped += remove_supplementary_reads(&mut partial_split_read_map);
-		}
 
 		let (
 			completed_split_reads,
@@ -159,40 +104,6 @@ fn find_next_complete_read(partial_split_read_map: &PartialSplitReadMap) -> Opti
 	for (key, vec) in partial_split_read_map.iter() {
 		for (i, read) in vec.iter().enumerate() {
 			if read.is_complete() {
-				return Some((*key, i));
-			}
-		}
-	}
-	None
-}
-
-fn remove_supplementary_reads(partial_split_read_map: &mut PartialSplitReadMap) -> usize {
-	let mut removed_reads = 0usize;
-	loop {
-		let next_supplementary_read = find_next_supplementary_read(partial_split_read_map);
-		match next_supplementary_read {
-			None => {
-				break;
-			}
-			Some((key, i)) => {
-				removed_reads += 1;
-				let vec = partial_split_read_map.get_mut(&key).unwrap();
-				if vec.len() == 1 {
-					partial_split_read_map.remove(&key);
-				}
-				else {
-					vec.remove(i);
-				}
-			}
-		}
-	}
-	removed_reads
-}
-
-fn find_next_supplementary_read(partial_split_read_map: &PartialSplitReadMap) -> Option<((i32, u32), usize)> {
-	for (key, vec) in partial_split_read_map.iter() {
-		for (i, read) in vec.iter().enumerate() {
-			if read.is_supplementary() {
 				return Some((*key, i));
 			}
 		}
@@ -298,7 +209,7 @@ fn handle_unmergeables(partial_split_read_map: &mut PartialSplitReadMap, all_no_
 }
 
 fn handle_unmergeables_recurse(partial_split_read_map: &mut PartialSplitReadMap) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
-	let dropped_supplementary = remove_supplementary_reads(partial_split_read_map);
+	let dropped_supplementary = 0;
 	let (
 		completed_split_reads,
 		dropped_no_next,
@@ -311,10 +222,8 @@ fn handle_unmergeables_recurse(partial_split_read_map: &mut PartialSplitReadMap)
 }
 
 fn handle_unmergeables_no_recurse(partial_split_read_map: &mut PartialSplitReadMap, all_no_next: bool, all_missing_chain: bool, count: usize) -> (Vec<PartialSplitRead>, usize, usize, usize, usize) {
-	if BRUTE_FORCE_UNMERGEABLE {
-		if let Ok(read) = brute_force_merge(partial_split_read_map) {
-			return (vec![read], 0, 0, 0, 0);
-		}
+	if let Ok(read) = brute_force_merge(partial_split_read_map) {
+		return (vec![read], 0, 0, 0, 0);
 	}
 
 	if all_no_next {
@@ -441,6 +350,13 @@ fn get_next_pair(partial_split_read_map: &PartialSplitReadMap) -> (Option<((i32,
 	(None, all_no_next.unwrap_or(false), all_missing_chain.unwrap_or(false))
 }
 
+pub struct SplitReadCollections {
+	normals: SplitReadCollection,
+	supplementaries: SplitReadCollection,
+	secondaries: SplitReadCollection,
+	duplicates: SplitReadCollection
+}
+
 #[derive(Error, Debug)]
 pub enum SplitReadCollectionTryFromAssemblerCollectionError {
 	#[error("could not convert single assembler into split read collection")]
@@ -449,36 +365,77 @@ pub enum SplitReadCollectionTryFromAssemblerCollectionError {
 	}
 }
 
-impl TryFrom<PresentationAssemblerCollection> for (SplitReadCollection, usize, usize, usize, usize) {
-	type Error = SplitReadCollectionTryFromAssemblerCollectionError;
+impl TryFrom<PresentationAssemblerCollection> for (SplitReadCollections, usize, usize, usize, usize) {
+	type Error = ();
 
 	fn try_from(value: PresentationAssemblerCollection) -> Result<Self, Self::Error> {
-		let assemblers = value.into_inner();
+		let PresentationAssemblerCollection {
+			normals,
+			supplementaries,
+			secondaries,
+			duplicates,
+		} = value;
 
-		let collections = assemblers.into_par_iter().fold(
-			|| {
-				Ok((SplitReadCollection {
-					split_reads: vec![]
-				}, 0usize, 0usize, 0usize, 0usize))
-			},
-			|a,b| {
-				let (a1, a2, a3, a4, a5) = a?;
-				let (b1, b2, b3, b4, b5): (SplitReadCollection, usize, usize, usize, usize) = b.try_into().map_err(|source| {
-					SplitReadCollectionTryFromAssemblerCollectionError::FromAssembler {
-						source
-					}
-				})?;
-				Ok((SplitReadCollection::combine(a1,b1), a2 + b2, a3 + b3, a4 + b4, a5 + b5))
-			}
-		).collect::<Result<Vec<(SplitReadCollection, usize, usize, usize, usize)>, SplitReadCollectionTryFromAssemblerCollectionError>>()?;
-		
-		Ok(collections.into_iter().fold(
-			(SplitReadCollection {
-				split_reads: vec![]
-			}, 0usize, 0usize, 0usize, 0usize),
-			|(a1, a2, a3, a4,a5),(b1, b2, b3, b4,b5)| {
-				(SplitReadCollection::combine(a1,b1), a2 + b2, a3 + b3, a4 + b4, a5 + b5)
-			}
-		))
+		let merged_normals = 
+			presentation_assembler_collection_into_split_read_collection(normals)?;
+		let merged_supplementaries = 
+			presentation_assembler_collection_into_split_read_collection(supplementaries)?;
+		let merged_secondaries = 
+			presentation_assembler_collection_into_split_read_collection(secondaries)?;
+		let merged_duplicates = 
+			presentation_assembler_collection_into_split_read_collection(duplicates)?;
+
+		let normals = merged_normals.0;
+		let supplementaries = merged_supplementaries.0;
+		let secondaries = merged_secondaries.0;
+		let duplicates = merged_duplicates.0;
+
+		let dropped_no_next = merged_normals.1 + merged_supplementaries.1 + merged_secondaries.1 + merged_duplicates.1;
+		let dropped_missing_info = merged_normals.2 + merged_supplementaries.2 + merged_secondaries.2 + merged_duplicates.2;
+		let dropped_unmergeable = merged_normals.3 + merged_supplementaries.3 + merged_secondaries.3 + merged_duplicates.3;
+		let dropped_supplementaries = merged_normals.4 + merged_supplementaries.4 + merged_secondaries.4 + merged_duplicates.4;
+
+		Ok(
+			(
+				SplitReadCollections {
+					normals,
+					supplementaries,
+					secondaries,
+					duplicates
+				},
+				dropped_no_next,
+				dropped_missing_info,
+				dropped_unmergeable,
+				dropped_supplementaries
+			)
+		)
 	}
+}
+
+fn presentation_assembler_collection_into_split_read_collection(value: Vec<PresentationAssembler>) -> Result<(SplitReadCollection, usize, usize, usize, usize), ()> {
+	let collections = value.into_par_iter().fold(
+		|| {
+			Ok((SplitReadCollection {
+				split_reads: vec![]
+			}, 0usize, 0usize, 0usize, 0usize))
+		},
+		|a,b| {
+			let (a1, a2, a3, a4, a5) = a?;
+			let (b1, b2, b3, b4, b5): (SplitReadCollection, usize, usize, usize, usize) = b.try_into().map_err(|source| {
+				SplitReadCollectionTryFromAssemblerCollectionError::FromAssembler {
+					source
+				}
+			})?;
+			Ok((SplitReadCollection::combine(a1,b1), a2 + b2, a3 + b3, a4 + b4, a5 + b5))
+		}
+	).collect::<Result<Vec<(SplitReadCollection, usize, usize, usize, usize)>, SplitReadCollectionTryFromAssemblerCollectionError>>().map_err(|_| ())?;
+
+	Ok(collections.into_iter().fold(
+		(SplitReadCollection {
+			split_reads: vec![]
+		}, 0usize, 0usize, 0usize, 0usize),
+		|(a1, a2, a3, a4,a5),(b1, b2, b3, b4,b5)| {
+			(SplitReadCollection::combine(a1,b1), a2 + b2, a3 + b3, a4 + b4, a5 + b5)
+		}
+	))
 }

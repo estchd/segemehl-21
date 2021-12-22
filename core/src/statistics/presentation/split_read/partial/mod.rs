@@ -1,3 +1,5 @@
+pub mod map;
+
 use std::convert::TryInto;
 use crate::statistics::presentation::record::PresentationRecord;
 use crate::statistics::presentation::split_read::SplitRead;
@@ -700,7 +702,7 @@ impl TryInto<SplitRead> for PartialSplitRead {
 mod partial_split_read_tests {
 	use crate::statistics::presentation::record::flags::PresentationFlags;
 	use crate::statistics::presentation::record::PresentationRecord;
-	use crate::statistics::presentation::split_read::partial::PartialSplitRead;
+	use crate::statistics::presentation::split_read::r#mod::PartialSplitRead;
 	use rstest::{rstest, fixture};
 
 	#[rstest]
