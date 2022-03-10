@@ -3,7 +3,8 @@
 members = [
     "backend",
     "core",
-    "frontend"
+    "frontend",
+    "test_generation"
 ]
 
 [profile.release.package.segemehl_21_backend]
