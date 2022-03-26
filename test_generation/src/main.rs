@@ -358,14 +358,13 @@ enum CIGAREntry {
 	M,
 	I,
 	S,
-	P,
 	Eq,
 	X
 }
 
 impl CIGAREntry {
 	fn generate_random() -> Self {
-		let value = thread_rng().gen_range(0..=5);
+		let value = thread_rng().gen_range(0..=3);
 
 		match value {
 			0 => {
@@ -375,15 +374,9 @@ impl CIGAREntry {
 				Self::I
 			},
 			2 => {
-				Self::S
-			},
-			3 => {
-				Self::P
-			},
-			4 => {
 				Self::Eq
 			},
-			5 => {
+			3 => {
 				Self::X
 			}
 			_ => {
@@ -402,9 +395,6 @@ impl CIGAREntry {
 			}
 			CIGAREntry::S => {
 				0x53
-			}
-			CIGAREntry::P => {
-				0x50
 			}
 			CIGAREntry::Eq => {
 				0x3D
