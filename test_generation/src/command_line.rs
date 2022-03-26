@@ -1,11 +1,18 @@
 use clap::{Command, Arg};
 use crate::options::Options;
 
+#[derive(Debug, Copy, Clone, Eq, PartialEq)]
+pub enum TestGenerationMode {
+	Reference,
+	Default
+}
+
 #[derive(Debug, Clone)]
 pub struct CommandLineParameters {
 	pub output_path: String,
 	pub record_count: usize,
-	pub options: Options
+	pub options: Options,
+	pub mode: TestGenerationMode
 }
 
 impl CommandLineParameters {
@@ -39,17 +46,33 @@ impl CommandLineParameters {
 					.takes_value(true)
 					.required(false)
 			)
+			.arg(
+				Arg::new("mode")
+					.long("mode")
+					.value_name("MODE")
+					.help("Test generation Mode")
+					.takes_value(true)
+					.required(false)
+			)
 			.get_matches();
 
 		let output_path = matches.value_of("output_path").map(|item| String::from(item))
 			.unwrap_or("output".to_string());
 		let options = Options::from(matches.value_of("flags").unwrap_or(""));
 		let record_count = matches.value_of("record_count").map(|item| item.parse().unwrap()).unwrap();
+		let mode = matches.value_of("mode").map(|item|
+			match item {
+				"ref" => TestGenerationMode::Reference,
+				_ => TestGenerationMode::Default
+			}
+		).unwrap_or(TestGenerationMode::Default);
+
 
 		CommandLineParameters {
 			output_path,
 			record_count,
-			options
+			options,
+			mode
 		}
 	}
 }

@@ -2,7 +2,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
-use crate::statistics::presentation::split_read::collection::SplitReadCollection;
+use crate::statistics::presentation::split_read::collection::{SplitReadCollection, SplitReadCollections};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplitReadStatistics {
@@ -45,18 +45,32 @@ impl SplitReadStatistics {
 	}
 }
 
-impl From<SplitReadCollection> for SplitReadStatistics {
-	fn from(value: SplitReadCollection) -> Self {
+impl From<SplitReadCollections> for SplitReadStatistics {
+	fn from(value: SplitReadCollections) -> Self {
 		println!("Calculating Statistics");
+
 		let gap_length_map = CalculationFrequencyMap::<i64>::new();
 		let total_length_map = CalculationFrequencyMap::<u32>::new();
 		let split_count_map = CalculationFrequencyMap::<usize>::new();
 		let split_count_unmapped_map = CalculationFrequencyMap::<usize>::new();
 		let unmapped_count_map = CalculationFrequencyMap::<usize>::new();
 
-		let vec = value.into_inner();
+		let SplitReadCollections {
+			normals, supplementaries, secondaries, duplicates
+		} = value;
 
-		vec.into_par_iter().for_each(|item| {
+		// TODO: Split statistics
+
+		normals.into_inner().into_par_iter().for_each(|item| {
+			item.calculate_statistics_into(&gap_length_map, &total_length_map, &split_count_map, &split_count_unmapped_map, &unmapped_count_map)
+		});
+		supplementaries.into_inner().into_par_iter().for_each(|item| {
+			item.calculate_statistics_into(&gap_length_map, &total_length_map, &split_count_map, &split_count_unmapped_map, &unmapped_count_map)
+		});
+		secondaries.into_inner().into_par_iter().for_each(|item| {
+			item.calculate_statistics_into(&gap_length_map, &total_length_map, &split_count_map, &split_count_unmapped_map, &unmapped_count_map)
+		});
+		duplicates.into_inner().into_par_iter().for_each(|item| {
 			item.calculate_statistics_into(&gap_length_map, &total_length_map, &split_count_map, &split_count_unmapped_map, &unmapped_count_map)
 		});
 

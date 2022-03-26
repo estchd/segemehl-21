@@ -8,7 +8,7 @@ use crate::statistics::presentation::assembler::collection::PresentationAssemble
 use crate::statistics::presentation::cigar_operations::CigarOperations;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::per_reference::PerReferencePresentationData;
-use crate::statistics::presentation::split_read::collection::{SplitReadCollection, SplitReadCollectionTryFromAssemblerCollectionError};
+use crate::statistics::presentation::split_read::collection::{SplitReadCollection, SplitReadCollections};
 use crate::statistics::presentation::split_read::statistics::SplitReadStatistics;
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
 use crate::statistics::shared::meta::Meta;
@@ -298,18 +298,8 @@ impl PresentationData {
     }
 }
 
-#[derive(Error, Debug)]
-pub enum PresentationDataTryFromError {
-    #[error("could not convert presentation assembler into split read collection")]
-    SplitReadCollection {
-        source: SplitReadCollectionTryFromAssemblerCollectionError
-    }
-}
-
-impl TryFrom<CalculationData> for PresentationData {
-    type Error = PresentationDataTryFromError;
-
-    fn try_from(value: CalculationData) -> Result<Self, Self::Error> {
+impl From<CalculationData> for PresentationData {
+    fn from(value: CalculationData) -> Self {
 
         let per_reference = value.per_reference
             .into_iter()
@@ -323,48 +313,22 @@ impl TryFrom<CalculationData> for PresentationData {
 
         let presentation_assembler_collection: PresentationAssemblerCollection = value.split_read.into();
         let (
-            split_read_collection,
-            dropped_no_next,
-            dropped_missing_info,
-            dropped_unmergeable,
-            dropped_supplementary
-        ): (SplitReadCollection, usize, usize, usize, usize)
-            = presentation_assembler_collection.try_into()
-            .map_err(|source| {
-                PresentationDataTryFromError::SplitReadCollection {
-                    source
-                }
-            })?;
+            split_read_collections,
+            dropped_reads
+        ): (SplitReadCollections, usize)
+            = presentation_assembler_collection.into();
 
-        let total_dropped =
-                dropped_no_next +
-                dropped_unmergeable +
-                dropped_missing_info +
-                dropped_supplementary;
-
-        if total_dropped > 0 {
-            println!("WARN: {} unmergeable reads dropped in total", total_dropped);
-        }
-        if dropped_no_next > 0 {
-            println!("WARN: {} unmergeable reads with missing next read dropped", dropped_no_next);
-        }
-        if dropped_unmergeable > 0 {
-            println!("WARN: {} unsolvable reads dropped", dropped_unmergeable)
-        }
-        if dropped_missing_info > 0 {
-            println!("WARN: {} unmergeable reads with missing next info dropped", dropped_missing_info);
-        }
-        if dropped_supplementary > 0 {
-            println!("WARN: {} supplementary reads dropped", dropped_supplementary);
+        if dropped_reads > 0 {
+            println!("WARN: {} unmergeable reads dropped", dropped_reads);
         }
 
-        let split_read = split_read_collection.into();
+        let split_read = split_read_collections.into();
 
-        Ok(Self {
+        Self {
             split_read,
             per_reference,
             unmapped,
             meta: value.meta
-        })
+        }
     }
 }

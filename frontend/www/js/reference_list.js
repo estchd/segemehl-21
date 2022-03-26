@@ -11,7 +11,7 @@ export function check_references(references) {
     references = new Set(references);
 
     reference_list.forEach((reference) => {
-        if (!references.includes(reference)) {
+        if (!references.has(reference)) {
             return false;
         }
 

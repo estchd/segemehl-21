@@ -66,10 +66,10 @@ pub struct PerFileStatistics {
 pub fn generate_file_stats(buffer: ArrayBuffer) -> JsValue {
     let result = match generate_file_stats_inner(buffer) {
         Ok(value) => {
-            JsValue::from_str(format!("{{\"result\": \"success\",\"data\": {}}}",JSON::stringify(&value).unwrap()).as_str())
+            JsValue::from_str(format!("{{\"result\": \"success\",\"data\": {}}}",JSON::stringify(&value).unwrap().as_string().unwrap()).as_str())
         }
         Err(value) => {
-            JsValue::from_str(format!("{{\"result\": \"error\",\"data\": {}}}",JSON::stringify(&value).unwrap()).as_str())
+            JsValue::from_str(format!("{{\"result\": \"error\",\"data\": {}}}",JSON::stringify(&value).unwrap().as_string().unwrap()).as_str())
         }
     };
     result
