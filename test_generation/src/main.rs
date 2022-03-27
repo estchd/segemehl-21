@@ -1,4 +1,4 @@
-use std::cmp::{max, min};
+use std::cmp::min;
 use std::fs::File;
 use std::io::BufWriter;
 use std::path::Path;
@@ -6,11 +6,9 @@ use std::str::FromStr;
 use ascii::AsciiString;
 use bam::{BamWriter, Header, Record, RecordWriter, SamWriter};
 use bam::header::HeaderEntry;
-use bam::header::HeaderLine::Entry;
 use bam::record::Flag;
-use rand::distributions::{Alphanumeric, Uniform};
+use rand::distributions::{Alphanumeric};
 use rand::{Rng, thread_rng};
-use rand::distributions::uniform::UniformChar;
 use crate::command_line::{CommandLineParameters, TestGenerationMode};
 use crate::sequence::{Sequence, SequenceBase};
 
@@ -38,7 +36,7 @@ fn main() {
 
 	for sequence in &ref_sequences.sequences {
 		let entry = HeaderEntry::ref_sequence(sequence.0.clone(), sequence.1);
-		header.push_entry(entry);
+		header.push_entry(entry).unwrap();
 	}
 
 	match params.mode {
@@ -94,8 +92,8 @@ impl Files {
 	}
 
 	pub fn write(&mut self, record: &Record) {
-		self.sam.write(record);
-		self.bam.write(record);
+		self.sam.write(record).unwrap();
+		self.bam.write(record).unwrap();
 	}
 
 	pub fn flush(&mut self) {
@@ -128,11 +126,11 @@ impl ReferenceSequences {
 	}
 
 	fn get_sequence_length(&self, index: usize) -> Option<u32> {
-		self.sequences.get(index).map(|(a,b)| *b)
+		self.sequences.get(index).map(|(_a,b)| *b)
 	}
 
 	fn get_sequence_name(&self, index: usize) -> Option<&String> {
-		self.sequences.get(index).map(|(a,b)| a)
+		self.sequences.get(index).map(|(a,_b)| a)
 	}
 
 	fn get_sequence(&self, index: usize) -> Option<&(String, u32)> {
@@ -151,18 +149,6 @@ impl ReferenceSequences {
 		let index = self.get_random_index();
 		(self.get_sequence(index).unwrap(), index)
 	}
-}
-
-fn generate_random_header(num_references: usize, min_length: u32, max_length: u32) -> Header {
-	let mut header = Header::new();
-	for _ in 0..num_references {
-		let sequence_name = generate_random_name_string(20);
-		let sequence_length = thread_rng().gen_range(min_length..=max_length);
-		let sequence_entry = HeaderEntry::ref_sequence(sequence_name, sequence_length);
-		header.push_entry(sequence_entry);
-	}
-
-	header
 }
 
 fn generate_random_read(references: &ReferenceSequences, reference_id: Option<(u32,usize)>) -> Record {
@@ -197,28 +183,6 @@ fn generate_random_read(references: &ReferenceSequences, reference_id: Option<(u
 	let sequence = Sequence::generate_random(seq_length);
 
 	read_from_parts(&name, flags, Some(index as u32), Some(pos), mapq, None, None, None, sequence)
-}
-
-fn generate_random_seq(length: usize) -> String {
-	let possible_values = ['A','G','C','T'];
-
-	thread_rng().sample_iter(Uniform::new(0,4))
-		.take(length)
-		.map(|item| possible_values[item])
-		.collect()
-}
-
-fn generate_random_cigar(sequence: &String) -> String {
-	format!("{}M", sequence.len())
-}
-
-fn generate_random_seq_quality(sequence: &String, _: &String) -> Vec<u8>{
-	let mut qualities: Vec<u8> = Vec::with_capacity(sequence.len());
-	for i in 0..sequence.len() {
-		let quality = thread_rng().gen_range(0..(255u8-33u8));
-		qualities.push(quality)
-	}
-	qualities
 }
 
 fn generate_random_name_string(length: usize) -> String {
@@ -258,8 +222,8 @@ fn read_from_parts(
 	read.set_ref_id(ref_id);
 	read.set_start(start);
 	read.set_mapq(map_q);
-	read.set_seq_qual(seq, qualities);
-	read.set_cigar(cigar);
+	read.set_seq_qual(seq, qualities).unwrap();
+	read.set_cigar(cigar).unwrap();
 	read.set_mate_ref_id(mate_ref_id);
 	read.set_mate_start(mate_start);
 	read.set_template_len(template_len);
@@ -268,7 +232,7 @@ fn read_from_parts(
 }
 
 fn generate_random_quality() -> u8 {
-	thread_rng().gen_range(0x21..=0x7E)
+	thread_rng().gen_range(0..=0x5D)
 }
 
 enum SequenceEntry {

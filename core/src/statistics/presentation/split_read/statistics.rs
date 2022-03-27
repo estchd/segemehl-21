@@ -2,7 +2,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
 use crate::statistics::calculation::frequency_map::CalculationFrequencyMap;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
-use crate::statistics::presentation::split_read::collection::{SplitReadCollection, SplitReadCollections};
+use crate::statistics::presentation::split_read::collection::SplitReadCollections;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct SplitReadStatistics {

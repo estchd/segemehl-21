@@ -17,15 +17,37 @@ impl Sequence {
 		let mut rand = thread_rng();
 		let start_clip = rand.gen_range(0..10);
 		let end_clip = rand.gen_range(0..10);
-		let start_soft_clip = rand.gen_range(0..min(10,length));
+		let start_soft_clip = if length > 1 {
+			rand.gen_range(0..min(10,length - 1))
+		} else {
+			0
+		};
+
 		let remaining_length = length - start_soft_clip;
-		let end_soft_clip = rand.gen_range(0..min(10,remaining_length));
+		let end_soft_clip = if remaining_length > 1 {
+			rand.gen_range(0..min(10,remaining_length - 1))
+		} else {
+			0
+		};
 		let regular_length = remaining_length - end_soft_clip;
-		let mut start_soft_clip = Self::generate_soft_clip(start_soft_clip);
-		let mut end_soft_clip = Self::generate_soft_clip(end_soft_clip);
+
+		let mut start_soft_clip = if start_soft_clip != 0 {
+			Self::generate_soft_clip(start_soft_clip)
+		} else {
+			vec![]
+		};
+
+		let mut end_soft_clip = if end_soft_clip != 0 {
+			Self::generate_soft_clip(end_soft_clip)
+		} else {
+			vec![]
+		};
+
 		let mut middle = Self::generate_regular_sequence(regular_length);
+
 		start_soft_clip.append(&mut middle);
 		start_soft_clip.append(&mut end_soft_clip);
+
 		Self {
 			start_hard_clip: start_clip,
 			entries: start_soft_clip,
@@ -36,8 +58,12 @@ impl Sequence {
 	fn generate_regular_sequence(length: usize) -> Vec<SequenceEntry> {
 		let mut entries: Vec<SequenceEntry> = Vec::new();
 
-		for _ in 0..length {
+		let mut i = 0;
+		while i < length {
 			let entry = SequenceEntry::generate_random();
+			if let SequenceEntry::Base(_) = &entry {
+				i += 1;
+			}
 			entries.push(entry);
 		}
 
@@ -72,9 +98,6 @@ impl Sequence {
 			})
 			.map(|item| item.base.to_u8()).collect();
 
-		let sequence_chars: String = sequence.iter().map(|item| *item as char).collect();
-		//println!("se: {}", sequence_chars);
-
 		sequence
 	}
 
@@ -94,10 +117,6 @@ impl Sequence {
 			.flatten()
 			.collect();
 
-		let extended_cigar_string = String::from_utf8(extended_cigar.clone()).unwrap();
-
-		//println!("ex: {}", extended_cigar_string);
-
 		let mut compressed_cigar = Self::compress_cigar(extended_cigar.clone());
 		if self.start_hard_clip != 0 {
 			compressed_cigar.insert(0, (self.start_hard_clip, 0x48))
@@ -105,13 +124,6 @@ impl Sequence {
 		if self.end_hard_clip != 0 {
 			compressed_cigar.push((self.end_hard_clip, 0x48))
 		}
-
-		let compressed_cigar_chars: String = compressed_cigar.iter()
-			.map(|item| (item.0, item.1 as char))
-			.map(|item| format!("{}{}", item.0, item.1))
-			.collect();
-
-		//println!("cm: {}", compressed_cigar_chars);
 
 		let mut compressed_cigar_u8: Vec<u8> = Vec::new();
 		for (len, cigar) in compressed_cigar {
@@ -122,8 +134,6 @@ impl Sequence {
 			}
 			compressed_cigar_u8.push(cigar);
 		}
-
-		//check_cigar_length(extended_cigar.clone(), compressed_cigar_u8.clone());
 
 		compressed_cigar_u8
 	}
@@ -171,40 +181,4 @@ pub struct SequenceBase {
 	pub(crate) base: Base,
 	pub(crate) cigar: CIGAREntry,
 	pub(crate) quality: u8
-}
-
-fn check_cigar_length(extended: Vec<u8>, compressed: Vec<u8>) {
-	let extended_string = String::from_utf8(extended).unwrap();
-	let compressed_string = String::from_utf8(compressed).unwrap();
-	let re_extended = extend_cigar(compressed_string);
-	if re_extended != extended_string {
-		println!("cigar mismatch");
-		println!("extended: {}", extended_string);
-		println!("compressed: {}", re_extended);
-		panic!()
-	}
-}
-
-fn extend_cigar(compressed: String) -> String {
-	let mut extended: Vec<u8> = vec![];
-
-	let mut current_num_bytes = Vec::<u8>::new();
-
-	for char in compressed.bytes() {
-		let char = char as char;
-		if (char >= '0' && char <= '9') {
-			current_num_bytes.push(char as u8);
-		}
-		else {
-			if char != 0x48 as char {
-				let num_str = String::from_utf8(current_num_bytes.clone()).unwrap();
-				let num = num_str.parse::<u32>().unwrap();
-				for _ in 0..num {
-					extended.push(char as u8);
-				}
-			}
-			current_num_bytes.clear();
-		}
-	}
-	String::from_utf8(extended).unwrap()
 }

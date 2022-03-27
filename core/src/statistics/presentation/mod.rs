@@ -1,14 +1,11 @@
-use std::convert::{TryFrom, TryInto};
-
 use serde_derive::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::statistics::calculation::CalculationData;
 use crate::statistics::presentation::assembler::collection::PresentationAssemblerCollection;
 use crate::statistics::presentation::cigar_operations::CigarOperations;
 use crate::statistics::presentation::frequency_map::PresentationFrequencyMap;
 use crate::statistics::presentation::per_reference::PerReferencePresentationData;
-use crate::statistics::presentation::split_read::collection::{SplitReadCollection, SplitReadCollections};
+use crate::statistics::presentation::split_read::collection::SplitReadCollections;
 use crate::statistics::presentation::split_read::statistics::SplitReadStatistics;
 use crate::statistics::presentation::unmapped::UnmappedPresentationData;
 use crate::statistics::shared::meta::Meta;

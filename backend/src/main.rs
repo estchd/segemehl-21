@@ -70,7 +70,8 @@ fn main() -> anyhow::Result<()> {
 
     let total_record_stats: (AtomicUsize, AtomicUsize) = (AtomicUsize::new(0), AtomicUsize::new(0));
 
-    reader.into_par_iter().filter_map(|item| item.ok()).try_for_each(|record| -> anyhow::Result<()> {
+    reader.into_par_iter().try_for_each(|record| -> anyhow::Result<()> {
+        let record = record.context("Error decompressing Read")?;
         total_record_stats.0.fetch_add(1, Ordering::Relaxed);
 
         let _ = total_record_stats.1.fetch_add(get_record_length_on_reference(&record) as usize, Ordering::Relaxed);
