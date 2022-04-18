@@ -55,7 +55,7 @@ impl CommandLineParameters {
                 Arg::with_name("bin_size")
                     .long("bin_size")
                     .value_name("BIN_SIZE")
-                    .help("The bin size that should be used")
+                    .help("The bam size that should be used")
                     .takes_value(true)
                     .required(false)
                     .validator(non_zero_number_validator)

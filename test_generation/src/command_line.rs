@@ -1,17 +1,24 @@
 use clap::{Command, Arg};
-use crate::options::Options;
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
 pub enum TestGenerationMode {
 	Reference,
-	Default
+	Default,
+	Bin,
+	ReferenceReadLength,
+	CIGAR,
+	MapQ,
+	MapQPerRef,
+	ReadLenRef,
+	ReadLenSeq,
+	Unmapped,
+	RefLen
 }
 
 #[derive(Debug, Clone)]
 pub struct CommandLineParameters {
 	pub output_path: String,
 	pub record_count: usize,
-	pub options: Options,
 	pub mode: TestGenerationMode
 }
 
@@ -23,7 +30,7 @@ impl CommandLineParameters {
 			.about("Generates BAM files to test Segemehl21")
 			.arg(
 				Arg::new("output_path")
-					.long("bam")
+					.long("output")
 					.value_name("OUTPUT_BAM_PATH")
 					.help("Path to the Output BAM File")
 					.takes_value(true)
@@ -35,16 +42,8 @@ impl CommandLineParameters {
 					.value_name("RECORD_COUNT")
 					.help("How many records the output file should contain")
 					.takes_value(true)
-					.required(true)
-					.validator(number_validator)
-			)
-			.arg(
-				Arg::new("flags")
-					.long("flags")
-					.value_name("FLAGS")
-					.help("Flags that govern the test data generation")
-					.takes_value(true)
 					.required(false)
+					.validator(number_validator)
 			)
 			.arg(
 				Arg::new("mode")
@@ -58,11 +57,20 @@ impl CommandLineParameters {
 
 		let output_path = matches.value_of("output_path").map(|item| String::from(item))
 			.unwrap_or("output".to_string());
-		let options = Options::from(matches.value_of("flags").unwrap_or(""));
-		let record_count = matches.value_of("record_count").map(|item| item.parse().unwrap()).unwrap();
+		let record_count = matches.value_of("record_count").map(|item| item.parse().unwrap())
+			.unwrap_or(1000);
 		let mode = matches.value_of("mode").map(|item|
 			match item {
 				"ref" => TestGenerationMode::Reference,
+				"bin" => TestGenerationMode::Bin,
+				"ref_read_len" => TestGenerationMode::ReferenceReadLength,
+				"cigar" => TestGenerationMode::CIGAR,
+				"mapq" => TestGenerationMode::MapQ,
+				"mapq_per_ref" => TestGenerationMode::MapQPerRef,
+				"read_len_ref" => TestGenerationMode::ReadLenRef,
+				"read_len_seq" => TestGenerationMode::ReadLenSeq,
+				"unmapped" => TestGenerationMode::Unmapped,
+				"ref_len" => TestGenerationMode::RefLen,
 				_ => TestGenerationMode::Default
 			}
 		).unwrap_or(TestGenerationMode::Default);
@@ -71,7 +79,6 @@ impl CommandLineParameters {
 		CommandLineParameters {
 			output_path,
 			record_count,
-			options,
 			mode
 		}
 	}

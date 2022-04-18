@@ -1,0 +1,11 @@
+call ./process_head1mio.bat
+cd ./run_scripts/win/real_data
+call ./process_head1mio_sorted.bat
+cd ./run_scripts/win/real_data
+call ./process_head10mio.bat
+cd ./run_scripts/win/real_data
+call ./process_head10mio_sorted.bat
+cd ./run_scripts/win/real_data
+call ./process_rep1.bat
+cd ./run_scripts/win/real_data
+call ./process_rep1-chr1.bat

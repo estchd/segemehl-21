@@ -3,8 +3,10 @@
 *.bam
 *.bai
 *.sam
-/run_scripts
 /frontend/www/node_modules
 package-lock.json
 /example_files
 /output
+/test_data
+/benchmark_data
+/real_data
