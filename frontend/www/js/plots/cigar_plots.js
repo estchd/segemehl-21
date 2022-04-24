@@ -53,10 +53,16 @@ function setup_cigar_total_file_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: false,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
             },
             interaction: {
@@ -156,11 +162,16 @@ function setup_cigar_percentage_file_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
-
+                    title: {
+                        display: false,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Percentage',
+                    },
                     ticks: {
                         callback: function(value){return value+"%"}
                     }
@@ -236,10 +247,16 @@ function setup_cigar_total_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: true
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
             },
             interaction: {
@@ -372,10 +389,16 @@ function setup_cigar_percentage_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Percentage',
+                    },
                     ticks: {
                         callback: function(value){return value+"%"}
                     }
@@ -487,10 +510,16 @@ function setup_cigar_total_per_bin_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Position on Reference',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
             },
             interaction: {
@@ -655,10 +684,16 @@ function setup_cigar_percentage_per_bin_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Position on Reference',
+                    }
                 },
                 y: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Percentage',
+                    },
                     ticks: {
                         callback: function(value){return value+"%"}
                     }
@@ -706,6 +741,8 @@ function update_cigar_percentage_per_bin_plot() {
             let insertion_data = get_dataset(name, reference_name + "_cigar_percentage_per_bin_insertion");
             let deletion_data = get_dataset(name, reference_name + "_cigar_percentage_per_bin_deletion");
             let skip_data = get_dataset(name, reference_name + "_cigar_percentage_per_bin_skip");
+
+            console.log(match_data)
 
             let match_line_data = bin_data_to_line_data(match_data);
             let insertion_line_data = bin_data_to_line_data(insertion_data);

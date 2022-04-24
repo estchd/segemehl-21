@@ -1,3 +1,10 @@
+import { Chart, registerables } from 'chart.js';
+import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
+
+// register controller in chart.js and ensure the defaults are set
+Chart.register(BoxPlotController, BoxAndWiskers);
+Chart.register(...registerables)
+
 import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
 import {get_reference_names} from "../reference_list";
 import {get_dataset, get_file_list} from "../file_storage";
@@ -27,7 +34,7 @@ const unmapped_read_count_logarithmic = document.getElementById("unmapped_read_c
 
 function setup_unmapped_read_count_plot() {
     let data = {
-        labels: ["Unmapped Read Count"],
+        labels: [""],
         datasets: []
     };
 
@@ -46,10 +53,16 @@ function setup_unmapped_read_count_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
             },
             interaction: {
@@ -69,7 +82,7 @@ function setup_unmapped_read_count_plot() {
 function update_unmapped_read_count_plot() {
     if (unmapped_read_count_plot) {
         let plot_data = {
-            labels: ["Unmapped Read Count"],
+            labels: [""],
             datasets: []
         };
 
@@ -110,7 +123,7 @@ let unmapped_read_percentage_plot;
 
 function setup_unmapped_read_percentage_plot() {
     let data = {
-        labels: ["Unmapped Read Percentage"],
+        labels: [""],
         datasets: []
     };
 
@@ -146,10 +159,16 @@ function setup_unmapped_read_percentage_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Percentage',
+                    },
                     ticks: {
                         callback: function(value){return value+"%"}
                     }
@@ -172,7 +191,7 @@ function setup_unmapped_read_percentage_plot() {
 function update_unmapped_read_percentage_plot() {
     if (unmapped_read_percentage_plot) {
         let plot_data = {
-            labels: ["Unmapped Read Percentage"],
+            labels: [""],
             datasets: []
         };
 
@@ -204,7 +223,7 @@ let unmapped_read_length_plot;
 
 function setup_unmapped_read_length_plot() {
     let data = {
-        labels: ["File"],
+        labels: [""],
         datasets: []
     };
 
@@ -217,16 +236,27 @@ function setup_unmapped_read_length_plot() {
                     display: false,
                     text: "Unmapped Read Length"
                 },
+                tooltip: {
+                    callbacks: {
+                        label: boxplot_tooltip
+                    }
+                },
             },
             locale: "de-DE",
             responsive: true,
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Length',
+                    }
                 }
             },
             interaction: {
@@ -234,11 +264,6 @@ function setup_unmapped_read_length_plot() {
                 intersect: false
             },
             animation: false,
-            tooltips: {
-                callbacks: {
-                    boxplotLabel: boxplot_tooltip
-                }
-            },
         }
     };
 
@@ -251,7 +276,7 @@ function setup_unmapped_read_length_plot() {
 function update_unmapped_read_length_plot() {
     if (unmapped_read_length_plot) {
         let plot_data = {
-            labels: ["File"],
+            labels: [""],
             datasets: []
         };
 
@@ -284,5 +309,7 @@ function update_unmapped_read_length_plot() {
 
         unmapped_read_length_plot.config.data = plot_data;
         unmapped_read_length_plot.update();
+
+        console.log(unmapped_read_length_plot)
     }
 }

@@ -146,10 +146,7 @@
                     <div class="tab-pane fade" id="plots-tab-content" role="tabpanel" aria-labelledby="plots-tab">
                         <ul class="nav nav-tabs" id="plot-tabs" role="tablist">
                             <li>
-                                <button class="nav-link active" id="test-plots-tab" data-bs-toggle="tab" data-bs-target="#test-plots-tab-content" type="button" role="tab" aria-controls="test-plots-tab" aria-selected="true">Test Plots</button>
-                            </li>
-                            <li>
-                                <button class="nav-link" id="reference-plots-tab" data-bs-toggle="tab" data-bs-target="#reference-plots-tab-content" type="button" role="tab" aria-controls="reference-plots-tab" aria-selected="true">Reference Plots</button>
+                                <button class="nav-link active" id="reference-plots-tab" data-bs-toggle="tab" data-bs-target="#reference-plots-tab-content" type="button" role="tab" aria-controls="reference-plots-tab" aria-selected="true">Reference Plots</button>
                             </li>
                             <li>
                                 <button class="nav-link" id="unmapped-plots-tab" data-bs-toggle="tab" data-bs-target="#unmapped-plots-tab-content" type="button" role="tab" aria-controls="unmapped-plots-tab" aria-selected="true">Unmapped Plots</button>
@@ -171,25 +168,7 @@
                             </li>
                         </ul>
                         <div class="tab-content" id="plot-tabs-content">
-                            <div class="tab-pane fade show active" id="test-plots-tab-content" role="tabpanel" aria-labelledby="test-plots-tab">
-                                <h4 style="width: 600px">Box Plot with Number items</h4>
-                                <div class="w-100">
-                                    <canvas id="test_box_number_item_canvas"></canvas>
-                                </div>
-                                <h4 style="width: 600px">Box Plot with Box Plot items</h4>
-                                <div class="w-100">
-                                    <canvas id="test_box_box_plot_item_canvas"></canvas>
-                                </div>
-                                <h4 style="width: 600px">Violin Plot with Number Items</h4>
-                                <div class="w-100">
-                                    <canvas id="test_violin_number_item_canvas"></canvas>
-                                </div>
-                                <h4 style="width: 600px">Violin Plot with Violin items</h4>
-                                <div class="w-100">
-                                    <canvas id="test_violin_violin_item_canvas"></canvas>
-                                </div>
-                            </div>
-                            <div class="tab-pane fade" id="reference-plots-tab-content" role="tabpanel" aria-labelledby="reference-plots-tab">
+                            <div class="tab-pane fade show active" id="reference-plots-tab-content" role="tabpanel" aria-labelledby="reference-plots-tab">
                                 <h4 style="width: 600px">Reference Length</h4>
                                 <p>Logarithmic Scale: <input id="reference_length_logarithmic" type="checkbox"/></p>
                                 <div class="w-100">
@@ -216,7 +195,7 @@
                                 <div class="w-100">
                                     <canvas id="gap_lengths_file_canvas"></canvas>
                                 </div>
-                                <h4 style="width: 600px">Complete Lengths per File</h4>
+                                <h4 style="width: 600px">Template Lengths per File</h4>
                                 <div class="w-100">
                                     <canvas id="complete_lengths_file_canvas"></canvas>
                                 </div>

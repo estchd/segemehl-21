@@ -702,8 +702,8 @@ impl TryInto<SplitRead> for PartialSplitRead {
 mod partial_split_read_tests {
 	use crate::statistics::presentation::record::flags::PresentationFlags;
 	use crate::statistics::presentation::record::PresentationRecord;
-	use crate::statistics::presentation::split_read::r#mod::PartialSplitRead;
-	use rstest::{rstest, fixture};
+	use rstest::{rstest};
+	use crate::statistics::presentation::split_read::partial::PartialSplitRead;
 
 	#[rstest]
 	#[case(false, false, "MiddleOnly")]
@@ -728,15 +728,7 @@ mod partial_split_read_tests {
 		#[case]
 		expected_type: &str
 	) {
-		let flags = PresentationFlags::new(
-			is_mapped,
-			is_split,
-			is_reverse_strand,
-			is_last_mate,
-			is_first_mate,
-			is_supplementary,
-			is_next_unmapped
-		);
+		let flags = PresentationFlags::new(is_mapped, is_split, is_reverse_strand, is_last_mate, is_first_mate, is_supplementary, is_next_unmapped, false, false, false, false);
 		let read = PresentationRecord::new(
 			"test".to_string(),
 			flags,

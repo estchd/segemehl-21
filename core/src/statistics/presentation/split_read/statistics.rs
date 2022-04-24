@@ -59,8 +59,6 @@ impl From<SplitReadCollections> for SplitReadStatistics {
 			normals, supplementaries, secondaries, duplicates
 		} = value;
 
-		// TODO: Split statistics
-
 		normals.into_inner().into_par_iter().for_each(|item| {
 			item.calculate_statistics_into(&gap_length_map, &total_length_map, &split_count_map, &split_count_unmapped_map, &unmapped_count_map)
 		});

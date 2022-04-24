@@ -17,8 +17,8 @@
     "webpack"
   ],
   "dependencies": {
-    "chart.js": "^3.5.1",
-    "chartjs-chart-box-and-violin-plot": "^3.0.0",
+    "@sgratzl/chartjs-chart-boxplot": "^3.7.1",
+    "chart.js": "^3.7.1",
     "segemehl_21_frontend": "file:../pkg"
   },
   "devDependencies": {

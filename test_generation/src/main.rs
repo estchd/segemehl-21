@@ -46,7 +46,7 @@ fn main() {
 			generation_methods::default_generation(sam, bam, count, ref_sequences, header);
 		}
 		TestGenerationMode::Reference => {
-			generation_methods::per_reference_generation(sam, bam, count, ref_sequences, header);
+			generation_methods::per_reference_generation(sam, bam);
 		}
 		TestGenerationMode::Bin => {
 			generation_methods::per_bin_generation(sam, bam);
@@ -74,6 +74,21 @@ fn main() {
 		}
 		TestGenerationMode::RefLen => {
 			generation_methods::ref_len_generation(sam,bam);
+		}
+		TestGenerationMode::Split => {
+			generation_methods::split_read_generation(count, sam, bam);
+		}
+		TestGenerationMode::Mixed => {
+			generation_methods::mixed_read_generation(count, sam, bam);
+		}
+		TestGenerationMode::SplitGap => {
+			generation_methods::split_read_gap_generation(sam, bam);
+		}
+		TestGenerationMode::SplitCount => {
+			generation_methods::split_read_count_generation(sam, bam);
+		}
+		TestGenerationMode::SplitTlen => {
+			generation_methods::split_read_tlen_generation(sam, bam);
 		}
 	}
 }

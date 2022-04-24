@@ -12,7 +12,12 @@ pub enum TestGenerationMode {
 	ReadLenRef,
 	ReadLenSeq,
 	Unmapped,
-	RefLen
+	RefLen,
+	Split,
+	Mixed,
+	SplitGap,
+	SplitCount,
+	SplitTlen,
 }
 
 #[derive(Debug, Clone)]
@@ -71,6 +76,11 @@ impl CommandLineParameters {
 				"read_len_seq" => TestGenerationMode::ReadLenSeq,
 				"unmapped" => TestGenerationMode::Unmapped,
 				"ref_len" => TestGenerationMode::RefLen,
+				"split" => TestGenerationMode::Split,
+				"mixed" => TestGenerationMode::Mixed,
+				"split_gap" => TestGenerationMode::SplitGap,
+				"split_count" => TestGenerationMode::SplitCount,
+				"split_tlen" => TestGenerationMode::SplitTlen,
 				_ => TestGenerationMode::Default
 			}
 		).unwrap_or(TestGenerationMode::Default);

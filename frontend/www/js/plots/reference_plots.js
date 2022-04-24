@@ -4,6 +4,7 @@ import {get_dataset, get_file_list} from "../file_storage";
 
 export function setup_reference_plots() {
     setup_reference_length_plot();
+    reference_length_logarithmic.onchange = update_reference_length_plot;
 }
 
 export function update_reference_plots() {
@@ -42,13 +43,28 @@ function setup_reference_length_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Length',
+                    }
                 }
             },
             interaction: {
+                mode: 'index',
+                intersect: false
+            },
+            tooltip: {
+                position: 'average',
+                mode: 'index',
+                intersect: false
+            },
+            hover: {
                 mode: 'index',
                 intersect: false
             },
@@ -97,7 +113,7 @@ function update_reference_length_plot() {
             reference_length_plot.config.options.scales.y.type="logarithmic";
         }
         else {
-            reference_length_plot.config.options.scales.y.type=undefined;
+            reference_length_plot.config.options.scales.y.type="linear";
         }
 
         reference_length_plot.config.data = plot_data;

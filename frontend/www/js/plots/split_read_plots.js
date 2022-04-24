@@ -1,3 +1,9 @@
+import { Chart, LinearScale, CategoryScale } from 'chart.js';
+import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
+
+// register controller in chart.js and ensure the defaults are set
+Chart.register(BoxPlotController, BoxAndWiskers, LinearScale, CategoryScale);
+
 import {linking_update_selected_reference} from "../plots";
 import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
 import {get_reference_names} from "../reference_list";
@@ -27,7 +33,7 @@ let gap_lengths_file_plot;
 
 function setup_gap_lengths_file_plot() {
     let data = {
-        labels: ["File"],
+        labels: [""],
         datasets: []
     };
 
@@ -40,28 +46,34 @@ function setup_gap_lengths_file_plot() {
                     display: false,
                     text: "Gap Lengths per File"
                 },
+                tooltip: {
+                    callbacks: {
+                        label: boxplot_tooltip
+                    }
+                },
             },
             locale: "de-DE",
             responsive: true,
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Gap Length',
+                    }
                 }
             },
             interaction: {
                 mode: 'index',
                 intersect: false
             },
-            animation: false,
-            tooltips: {
-                callbacks: {
-                    boxplotLabel: boxplot_tooltip
-                }
-            }
+            animation: false
         }
     };
 
@@ -74,7 +86,7 @@ function setup_gap_lengths_file_plot() {
 function update_gap_lengths_file_plot() {
     if (gap_lengths_file_plot) {
         let plot_data = {
-            labels: ["File"],
+            labels: [""],
             datasets: []
         };
 
@@ -114,18 +126,23 @@ let complete_lengths_file_plot;
 
 function setup_complete_lengths_file_plot() {
     let data = {
-        labels: ["File"],
+        labels: [""],
         datasets: []
     };
 
     let config = {
-        type: 'bar',
+        type: 'boxplot',
         data: data,
         options: {
             plugins: {
                 title: {
                     display: false,
-                    text: "Complete Lengths per File"
+                    text: "Template Lengths per File"
+                },
+                tooltip: {
+                    callbacks: {
+                        label: boxplot_tooltip
+                    }
                 },
             },
             locale: "de-DE",
@@ -133,10 +150,16 @@ function setup_complete_lengths_file_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Template Length',
+                    }
                 }
             },
             interaction: {
@@ -144,11 +167,6 @@ function setup_complete_lengths_file_plot() {
                 intersect: false
             },
             animation: false,
-            tooltips: {
-                callbacks: {
-                    boxplotLabel: boxplot_tooltip
-                }
-            },
         }
     };
 
@@ -161,7 +179,7 @@ function setup_complete_lengths_file_plot() {
 function update_complete_lengths_file_plot() {
     if (complete_lengths_file_plot) {
         let plot_data = {
-            labels: ["File"],
+            labels: [""],
             datasets: []
         };
 
@@ -202,7 +220,7 @@ const split_counts_file_logarithmic = document.getElementById("split_counts_file
 
 function setup_split_counts_file_plot() {
     let data = {
-        labels: ["File"],
+        labels: [""],
         datasets: []
     };
 
@@ -215,16 +233,27 @@ function setup_split_counts_file_plot() {
                     display: false,
                     text: "Split Counts per File"
                 },
+                tooltip: {
+                    callbacks: {
+                        label: boxplot_tooltip
+                    }
+                },
             },
             locale: "de-DE",
             responsive: true,
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Split Count',
+                    }
                 }
             },
             interaction: {
@@ -246,7 +275,7 @@ function setup_split_counts_file_plot() {
 function update_split_counts_file_plot() {
     if (split_counts_file_plot) {
         let plot_data = {
-            labels: ["File"],
+            labels: [""],
             datasets: []
         };
 

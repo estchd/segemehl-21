@@ -1,3 +1,9 @@
+import { Chart, LinearScale, CategoryScale } from 'chart.js';
+import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
+
+// register controller in chart.js and ensure the defaults are set
+Chart.register(BoxPlotController, BoxAndWiskers, LinearScale, CategoryScale);
+
 import {
     setup_coverage_plots,
     update_reference_dependent_coverage_plots,
@@ -29,11 +35,9 @@ import {
     update_reference_dependent_split_read_plots,
     update_split_read_plots
 } from "./plots/split_read_plots";
-import {setup_test_plots, update_reference_dependent_test_plots, update_test_plot} from "./plots/test_plots";
 import {get_reference_names} from "./reference_list";
 
 export function setup_plots() {
-    setup_test_plots();
     setup_split_read_plots();
     setup_reference_plots();
     setup_unmapped_plots();
@@ -48,7 +52,6 @@ export function setup_plots() {
 }
 
 export function update_all_plots() {
-    update_test_plot();
     update_split_read_plots();
     update_reference_plots();
     update_unmapped_plots();
@@ -61,7 +64,6 @@ export function update_all_plots() {
 }
 
 function update_reference_dependent_plots() {
-    update_reference_dependent_test_plots();
     update_reference_dependent_split_read_plots();
     update_reference_dependent_reference_plots();
     update_reference_dependent_unmapped_plots();

@@ -54,10 +54,16 @@ function setup_read_counts_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
             },
             interaction: {
@@ -151,10 +157,16 @@ function setup_read_counts_per_bin_on_reference_plot() {
             },
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Position on Reference',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
             },
             animation: false,
@@ -247,10 +259,16 @@ function setup_total_read_length_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Read Length',
+                    }
                 }
             },
             interaction: {
@@ -344,10 +362,16 @@ function setup_total_read_length_per_bin_on_reference_plot() {
             },
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Position on Reference',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Read Length',
+                    }
                 }
             },
             animation: false,
@@ -458,10 +482,16 @@ function setup_coverage_per_reference_plot() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Coverage',
+                    },
                     ticks: {
                         callback: function(value){return value+"%"}
                     }
@@ -559,6 +589,10 @@ function setup_coverage_per_bin_on_reference_plot() {
             },
             scales: {
                 x: {
+                    title: {
+                        display: true,
+                        text: 'Position on Reference',
+                    },
                     type: "linear",
                     ticks: {
                         source: 'auto',
@@ -568,6 +602,10 @@ function setup_coverage_per_bin_on_reference_plot() {
                     }
                 },
                 y: {
+                    title: {
+                        display: true,
+                        text: 'Coverage',
+                    },
                     ticks: {
                         callback: function(value){return value+"%"}
                     }

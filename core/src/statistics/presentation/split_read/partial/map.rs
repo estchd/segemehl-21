@@ -7,6 +7,15 @@ pub struct PartialSplitReadMap {
 	inner: HashMap<(i32, u32), Vec<PartialSplitRead>>
 }
 
+
+impl PartialSplitReadMap {
+	pub fn new() -> Self {
+		Self {
+			inner: HashMap::new()
+		}
+	}
+}
+
 impl Deref for PartialSplitReadMap {
 	type Target = HashMap<(i32, u32), Vec<PartialSplitRead>>;
 
@@ -20,6 +29,7 @@ impl DerefMut for PartialSplitReadMap {
 		&mut self.inner
 	}
 }
+
 
 impl From<Vec<PresentationRecord>> for PartialSplitReadMap {
 	fn from(value: Vec<PresentationRecord>) -> Self {

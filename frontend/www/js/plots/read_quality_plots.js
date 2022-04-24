@@ -1,3 +1,10 @@
+import { Chart, registerables } from 'chart.js';
+import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
+
+// register controller in chart.js and ensure the defaults are set
+Chart.register(BoxPlotController, BoxAndWiskers);
+Chart.register(...registerables)
+
 import {linking_update_selected_reference} from "../plots";
 import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
 import {get_dataset, get_file_list} from "../file_storage";
@@ -52,12 +59,18 @@ function setup_read_quality_file_plot() {
             },
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Quality',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
-            }
+            },
         }
     };
 
@@ -142,12 +155,18 @@ function setup_read_quality_selected_reference_plot() {
             },
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Quality',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Count',
+                    }
                 }
-            }
+            },
         }
     };
 
@@ -221,6 +240,11 @@ function setup_read_quality_per_reference_plot() {
                     display: false,
                     text: "Read Quality per Reference"
                 },
+                tooltip: {
+                    callbacks: {
+                        label: boxplot_tooltip
+                    }
+                },
             },
             locale: "de-DE",
             responsive: true,
@@ -231,15 +255,16 @@ function setup_read_quality_per_reference_plot() {
             },
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: false
-                }
-            },
-            tooltips: {
-                callbacks: {
-                    boxplotLabel: boxplot_tooltip
+                    title: {
+                        display: true,
+                        text: 'Quality',
+                    }
                 }
             },
             onClick: function (_, elements) {

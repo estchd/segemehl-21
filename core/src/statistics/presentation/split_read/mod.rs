@@ -95,28 +95,68 @@ impl SplitRead {
 	pub fn get_total_length(&self) -> u32 {
 		let forward_min = self.forward_strand_records
 		                      .first()
-		                      .map(|record| record.get_start())
-		                      .unwrap_or(0);
+		                      .map(|record| record.get_start());
 
-		let mut forward_max = 0u32;
+		let mut forward_max: Option<u32> = None;
 		for record in &self.forward_strand_records {
-			forward_max = max(forward_max, record.get_end());
+			match forward_max {
+				None => {
+					forward_max = Some(record.get_end());
+				}
+				Some(for_max) => {
+					forward_max = Some(max(for_max, record.get_end()));
+				}
+			}
 		}
 
 		let reverse_min = self.reverse_strand_records
 		                      .first()
-		                      .map(|record| record.get_start())
-		                      .unwrap_or(0);
+		                      .map(|record| record.get_start());
 
-		let mut reverse_max = 0u32;
+		let mut reverse_max: Option<u32> = None;
 		for record in &self.reverse_strand_records {
-			reverse_max = max(reverse_max, record.get_end());
+			match reverse_max {
+				None => {
+					reverse_max = Some(record.get_end());
+				}
+				Some(rev_max) => {
+					reverse_max = Some(max(rev_max, record.get_end()));
+				}
+			}
 		}
 
-		let min = min(forward_min, reverse_min);
-		let max = max(forward_max, reverse_max);
+		let min = match (forward_min, reverse_min) {
+			(Some(forward), Some(reverse)) => {
+				min(forward, reverse)
+			}
+			(Some(forward), None) => {
+				forward
+			}
+			(None, Some(reverse)) => {
+				reverse
+			}
+			(None, None) => {
+				0
+			}
+		} ;
+		let max = match (forward_max, reverse_max) {
+			(Some(forward), Some(reverse)) => {
+				max(forward, reverse)
+			}
+			(Some(forward), None) => {
+				forward
+			}
+			(None, Some(reverse)) => {
+				reverse
+			}
+			(None, None) => {
+				self.unmapped_records.first().unwrap().get_template_length()
+			}
+		} ;
 
-		max - min
+		let length = max - min;
+
+		length
 	}
 
 	pub fn get_statistics(&self) -> (PresentationFrequencyMap<i64>, u32, usize, usize) {
@@ -132,10 +172,6 @@ impl SplitRead {
 		self.calculate_gap_lengths_into_map(gap_length_map);
 		let total_length = self.get_total_length();
 		let split_count = self.get_split_count(false);
-
-		if split_count > 10 {
-			println!("{}", split_count);
-		}
 
 		let split_count_unmapped = self.get_split_count(true);
 		let unmapped_count = split_count_unmapped - split_count;

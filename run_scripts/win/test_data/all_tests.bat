@@ -9,3 +9,6 @@ call ./ref_len_test.bat
 call ./reference_read_length_test.bat
 call ./reference_test.bat
 call ./unmapped_test.bat
+call ./split_gap.bat
+call ./split_count.bat
+call ./split_tlen.bat

@@ -1,3 +1,10 @@
+import { Chart, registerables } from 'chart.js';
+import { BoxPlotController, BoxAndWiskers } from '@sgratzl/chartjs-chart-boxplot';
+
+// register controller in chart.js and ensure the defaults are set
+Chart.register(BoxPlotController, BoxAndWiskers);
+Chart.register(...registerables)
+
 import {linking_update_selected_reference} from "../plots";
 import {boxplot_from_separate_arrays, boxplot_tooltip} from "./box_plot";
 import {get_dataset, get_file_list} from "../file_storage";
@@ -28,7 +35,7 @@ let read_length_sequence_file_plot;
 
 function setup_read_length_sequence_file() {
     let data = {
-        labels: ["File"],
+        labels: [""],
         datasets: []
     };
 
@@ -45,6 +52,20 @@ function setup_read_length_sequence_file() {
             locale: "de-DE",
             responsive: true,
             maintainAspectRatio: true,
+            scales: {
+                x: {
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
+                },
+                y: {
+                    title: {
+                        display: true,
+                        text: 'Read Length',
+                    }
+                }
+            },
             interaction: {
                 mode: 'index',
                 intersect: false
@@ -67,7 +88,7 @@ function setup_read_length_sequence_file() {
 function update_read_length_sequence_file() {
     if (read_length_sequence_file_plot) {
         let plot_data = {
-            labels: ["File"],
+            labels: [""],
             datasets: []
         };
 
@@ -107,7 +128,7 @@ let read_length_reference_file_plot;
 
 function setup_read_length_reference_file() {
     let data = {
-        labels: ["File"],
+        labels: [""],
         datasets: []
     };
 
@@ -126,10 +147,16 @@ function setup_read_length_reference_file() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'File',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Read Length',
+                    }
                 }
             },
             interaction: {
@@ -154,7 +181,7 @@ function setup_read_length_reference_file() {
 function update_read_length_reference_file() {
     if (read_length_reference_file_plot) {
         let plot_data = {
-            labels: ["File"],
+            labels: [""],
             datasets: []
         };
 
@@ -214,10 +241,16 @@ function setup_read_length_sequence_per_reference() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: true,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: true
+                    title: {
+                        display: true,
+                        text: 'Read Length',
+                    }
                 }
             },
             interaction: {
@@ -304,10 +337,16 @@ function setup_read_length_on_reference_per_reference() {
             maintainAspectRatio: true,
             scales: {
                 x: {
-                    stacked: false,
+                    title: {
+                        display: true,
+                        text: 'Reference',
+                    }
                 },
                 y: {
-                    stacked: false
+                    title: {
+                        display: true,
+                        text: 'Read Length',
+                    }
                 }
             },
             interaction: {

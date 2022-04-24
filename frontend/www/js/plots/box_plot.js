@@ -1,14 +1,15 @@
-export function boxplot_tooltip(item, data, stats, hoveredOutlierIndex) {
-    return "" + data.datasets[item.datasetIndex].label +
-        " " + item.label +
-        " (min: " + new Intl.NumberFormat('en-US').format(stats.min) +
-        ", q1: " + new Intl.NumberFormat('en-US').format(stats.q1) +
-        ", median: " + new Intl.NumberFormat('en-US').format(stats.median) +
-        ", mean: " + new Intl.NumberFormat('en-US').format(stats.mean) +
-        ", mode: " + new Intl.NumberFormat('en-US').format(stats.mode) +
-        ", q3: " + new Intl.NumberFormat('en-US').format(stats.q3) +
-        ", max: " + new Intl.NumberFormat('en-US').format(stats.max) +
+export function boxplot_tooltip(item) {
+    return "" + item.dataset.label +
+        ": " + item.label +
+        " (min: " + new Intl.NumberFormat('en-US').format(item.raw.min) +
+        ", 25% quantile: " + new Intl.NumberFormat('en-US').format(item.raw.q1) +
+        ", median: " + new Intl.NumberFormat('en-US').format(item.raw.median) +
+        ", mean: " + new Intl.NumberFormat('en-US').format(item.raw.mean) +
+        ", mode: " + new Intl.NumberFormat('en-US').format(item.raw.mode) +
+        ", 75% quantile: " + new Intl.NumberFormat('en-US').format(item.raw.q3) +
+        ", max: " + new Intl.NumberFormat('en-US').format(item.raw.max) +
         ")";
+
 }
 
 export function histogram_from_values(values) {

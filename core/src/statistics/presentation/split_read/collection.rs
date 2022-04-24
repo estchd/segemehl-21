@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::convert::TryInto;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde_derive::{Serialize, Deserialize};
@@ -41,7 +42,7 @@ impl Into<(SplitReadCollection, usize)> for PresentationAssembler {
 		let (
 			completed_split_reads,
 			dropped_reads
-		) = merge_partial_split_read_map(&mut partial_split_read_map);
+		) = merge_partial_split_read_map(&mut partial_split_read_map, false);
 
 		let split_reads: Vec<SplitRead> = completed_split_reads.into_iter().map(|completed_split_read| {
 			completed_split_read.try_into().unwrap()
@@ -88,7 +89,7 @@ fn find_next_complete_read(partial_split_read_map: &PartialSplitReadMap) -> Opti
 	None
 }
 
-fn merge_partial_split_read_map(partial_split_read_map: &mut PartialSplitReadMap) -> (Vec<PartialSplitRead>, usize) {
+fn merge_partial_split_read_map(partial_split_read_map: &mut PartialSplitReadMap, has_recursed: bool) -> (Vec<PartialSplitRead>, usize) {
 	let mut completed_split_reads: Vec<PartialSplitRead> = remove_complete_reads(partial_split_read_map);
 
 	while !partial_split_read_map.is_empty() {
@@ -103,7 +104,7 @@ fn merge_partial_split_read_map(partial_split_read_map: &mut PartialSplitReadMap
 			}
 			None => {
 				let (completed, dropped_reads) =
-					handle_unmergeables(partial_split_read_map);
+					handle_unmergeables(partial_split_read_map, has_recursed);
 				completed_split_reads.extend(completed);
 				return (completed_split_reads, dropped_reads);
 			}
@@ -129,13 +130,13 @@ fn merge_pair_at_same_position(key: (i32, u32, usize), partial_split_read_map: &
 
 	let combined = PartialSplitRead::combine(first, second).unwrap();
 
-	if combined.is_complete() {
-		return Some(combined);
+	return if combined.is_complete() {
+		Some(combined)
 	}
 	else {
 		partial_split_read_map.insert((key.0, key.1), vec![combined]);
+		None
 	}
-	return None;
 }
 
 fn merge_pair_at_different_positions(first_key: (i32, u32, usize), second_key: (i32, u32), partial_split_read_map: &mut PartialSplitReadMap) -> Option<PartialSplitRead> {
@@ -167,17 +168,64 @@ fn merge_pair_at_different_positions(first_key: (i32, u32, usize), second_key: (
 	None
 }
 
-fn handle_unmergeables(partial_split_read_map: &mut PartialSplitReadMap) -> (Vec<PartialSplitRead>, usize) {
-	let mut count = 0;
-	for (_, value) in partial_split_read_map.iter_mut() {
-		count += value.len();
+fn handle_unmergeables(partial_split_read_map: &mut PartialSplitReadMap, has_recursed: bool) -> (Vec<PartialSplitRead>, usize) {
+	return if has_recursed {
+		let mut count = 0;
+		for (_, value) in partial_split_read_map.iter_mut() {
+			count += value.len();
+		}
+
+		return if let Ok(read) = brute_force_merge(partial_split_read_map) {
+			(vec![read], 0)
+		}
+		else {
+			(vec![], count)
+		}
+	}
+	else {
+		let split_maps = split_by_name(partial_split_read_map);
+
+		let mut completed = vec![];
+		let mut dropped = 0;
+
+		for (_, mut entry) in split_maps {
+			let (mut completed_part,dropped_part) = merge_partial_split_read_map(&mut entry, true);
+			completed.append(&mut completed_part);
+			dropped += dropped_part;
+		}
+
+		(completed, dropped)
+	}
+}
+
+fn split_by_name(partial_split_read_map: &mut PartialSplitReadMap) -> HashMap<String, PartialSplitReadMap> {
+	let mut new_maps: HashMap<String, PartialSplitReadMap> = HashMap::new();
+
+	while !partial_split_read_map.is_empty() {
+		let next_reads_key = *(partial_split_read_map.keys().next().unwrap());
+		let next_reads = partial_split_read_map.remove(&next_reads_key).unwrap();
+
+		for read in next_reads {
+			let name = read.get_name();
+
+			if new_maps.contains_key(&name) {
+				let map = new_maps.get_mut(&name).unwrap();
+				if map.contains_key(&next_reads_key) {
+					let reads = map.get_mut(&next_reads_key).unwrap();
+					reads.push(read);
+				}
+				else {
+					map.insert(next_reads_key, vec![read]);
+				}
+			}
+			else {
+				let mut new_map = PartialSplitReadMap::new();
+				new_map.insert(next_reads_key, vec![read]);
+			}
+		}
 	}
 
-	if let Ok(read) = brute_force_merge(partial_split_read_map) {
-		return (vec![read], 0);
-	}
-
-	(vec![], count)
+	new_maps
 }
 
 fn brute_force_merge(partial_split_read_map: &mut PartialSplitReadMap) -> Result<PartialSplitRead, usize> {
@@ -235,29 +283,17 @@ fn count_remaining_records(partial_split_read_map: &PartialSplitReadMap) -> usiz
 }
 
 fn get_next_pair(partial_split_read_map: &PartialSplitReadMap) -> Option<((i32, u32, usize), (i32, u32))> {
-	let mut all_no_next = None;
-	let mut all_missing_chain = None;
-
 	for (key, value) in partial_split_read_map.iter() {
 		for (i, read) in value.iter().enumerate() {
 			let p_next = read.get_p_next();
 			let r_next = read.get_r_next();
 
 			if p_next == -1 || r_next == -1 {
-				if let None = all_missing_chain {
-					all_missing_chain = Some(true);
-				}
 				continue;
 			}
 
 			if (r_next, p_next as u32) == (key.0, key.1) {
 				match value.len() {
-					1 => {
-						if let None = all_no_next {
-							all_no_next = Some(true);
-						}
-						continue;
-					}
 					2 => {
 						let pair = Some(((key.0, key.1, i), (key.0, key.1)));
 						return pair;
@@ -268,19 +304,13 @@ fn get_next_pair(partial_split_read_map: &PartialSplitReadMap) -> Option<((i32, 
 				}
 			}
 
-			all_missing_chain = Some(false);
-
 			let next = partial_split_read_map.get(&(r_next, p_next as u32));
 
 			let next = match next {
 				None => {
-					if let None = all_no_next {
-						all_no_next = Some(true);
-					}
 					continue;
 				}
 				Some(next) => {
-					all_no_next = Some(false);
 					next
 				}
 			};

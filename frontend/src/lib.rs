@@ -336,7 +336,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 
     let total_read_count = unmapped_read_count + mapped_read_count;
 
-    let unmapped_read_percentage = (total_read_count as f64 / unmapped_read_count as f64) * 100.0;
+    let unmapped_read_percentage = (unmapped_read_count as f64 / total_read_count as f64) * 100.0;
 
     let unmapped_read_length_box_plot_entry = boxplot_entry_from_frequency_map(
         data
@@ -638,7 +638,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
         let coverage_data: Vec<f64> = reference
             .get_binned_statistics()
             .get_bins()
-            .map(|item| item.get_coverage() * 100.0)
+            .map(|item| item.get_coverage())
             .collect();
 
 
@@ -666,12 +666,22 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
         file_cigar_operations.skips as f64
     ];
 
-    let cigar_percentage_file_data = vec![
-        (file_cigar_operations.alignment_matches as f64 / file_total_cigar_operations as f64) * 100.0,
-        (file_cigar_operations.insertions as f64 / file_total_cigar_operations as f64) * 100.0,
-        (file_cigar_operations.deletions as f64 / file_total_cigar_operations as f64) * 100.0,
-        (file_cigar_operations.skips as f64 / file_total_cigar_operations as f64) * 100.0
-    ];
+    let cigar_percentage_file_data = if file_total_cigar_operations != 0 {
+        vec![
+            (file_cigar_operations.alignment_matches as f64 / file_total_cigar_operations as f64) * 100.0,
+            (file_cigar_operations.insertions as f64 / file_total_cigar_operations as f64) * 100.0,
+            (file_cigar_operations.deletions as f64 / file_total_cigar_operations as f64) * 100.0,
+            (file_cigar_operations.skips as f64 / file_total_cigar_operations as f64) * 100.0
+        ]
+    }
+    else {
+        vec![
+            0.0,
+            0.0,
+            0.0,
+            0.0
+        ]
+    };
 
     repository.insert("cigar_total_file".to_string(), cigar_total_file_data);
     repository.insert("cigar_percentage_file".to_string(), cigar_percentage_file_data);
@@ -702,22 +712,50 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 
     let per_reference_percentage_match_data: Vec<f64> = per_reference_total_match_data.iter()
         .zip(per_reference_total_operations.iter())
-        .map(|(matches,total)| (*matches / *total as f64) * 100.0)
+        .map(|(matches,total)|
+            if *total != 0 {
+                (*matches / *total as f64) * 100.0
+            }
+            else {
+                0.0
+            }
+        )
         .collect();
 
     let per_reference_percentage_insertion_data: Vec<f64> = per_reference_total_insertion_data.iter()
         .zip(per_reference_total_operations.iter())
-        .map(|(insertions,total)| (*insertions / *total as f64) * 100.0)
+        .map(|(insertions,total)|
+            if *total != 0 {
+                (*insertions / *total as f64) * 100.0
+            }
+            else {
+                0.0
+            }
+        )
         .collect();
 
     let per_reference_percentage_deletion_data: Vec<f64> = per_reference_total_deletion_data.iter()
         .zip(per_reference_total_operations.iter())
-        .map(|(deletions,total)| (*deletions / *total as f64) * 100.0)
+        .map(|(deletions,total)|
+            if *total != 0 {
+                (*deletions / *total as f64) * 100.0
+            }
+            else {
+                0.0
+            }
+        )
         .collect();
 
     let per_reference_percentage_skip_data: Vec<f64> = per_reference_total_skip_data.iter()
         .zip(per_reference_total_operations.iter())
-        .map(|(skips,total)| (*skips / *total as f64) * 100.0)
+        .map(|(skips,total)|
+            if *total != 0 {
+                (*skips / *total as f64) * 100.0
+            }
+            else {
+                0.0
+            }
+        )
         .collect();
 
     repository.insert("cigar_total_per_reference_match".to_string(), per_reference_total_match_data);
@@ -758,22 +796,50 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 
         let per_bin_percentage_match_data: Vec<f64> = per_bin_total_match_data.iter()
             .zip(per_bin_total_operations.iter())
-            .map(|(matches,total)| (*matches / *total as f64) * 100.0)
+            .map(|(matches,total)|
+                if *total != 0 {
+                    (*matches / *total as f64) * 100.0
+                }
+                else {
+                    0.0
+                }
+            )
             .collect();
 
         let per_bin_percentage_insertion_data: Vec<f64> = per_bin_total_insertion_data.iter()
             .zip(per_bin_total_operations.iter())
-            .map(|(insertions,total)| (*insertions / *total as f64) * 100.0)
+            .map(|(insertions,total)|
+                if *total != 0 {
+                    (*insertions / *total as f64) * 100.0
+                }
+                else {
+                    0.0
+                }
+            )
             .collect();
 
         let per_bin_percentage_deletion_data: Vec<f64> = per_bin_total_deletion_data.iter()
             .zip(per_bin_total_operations.iter())
-            .map(|(deletions,total)| (*deletions / *total as f64) * 100.0)
+            .map(|(deletions,total)|
+                if *total != 0 {
+                    (*deletions / *total as f64) * 100.0
+                }
+                else {
+                    0.0
+                }
+            )
             .collect();
 
         let per_bin_percentage_skip_data: Vec<f64> = per_bin_total_skip_data.iter()
             .zip(per_bin_total_operations.iter())
-            .map(|(skips,total)| (*skips / *total as f64) * 100.0)
+            .map(|(skips,total)|
+                if *total != 0 {
+                    (*skips / *total as f64) * 100.0
+                }
+                else {
+                    0.0
+                }
+            )
             .collect();
 
         repository.insert(format!("{}_cigar_total_per_bin_match",&name), per_bin_total_match_data);
@@ -799,7 +865,7 @@ fn generate_data_repository(data: &PresentationData) -> HashMap<String, Vec<f64>
 
     let read_quality_per_reference_box_plot = box_plot_from_frequency_maps(
         data.get_per_reference_data()
-            .map(|item| item.get_read_length_on_reference_map())
+            .map(|item| item.get_quality_frequency())
             .collect()
     );
 
