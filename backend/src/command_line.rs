@@ -70,10 +70,11 @@ impl CommandLineParameters {
             )
             .get_matches();
 
-        let bam_path = matches.value_of("bam_path").map(|item| String::from(item)).unwrap();
+        let bam_path = matches.value_of("bam_path").map(|item| String::from(item))
+            .unwrap_or("input.bam".to_string());
         let bai_path = matches.value_of("bai_path").map(|item| String::from(item));
         let output_path = matches.value_of("output_path").map(|item| String::from(item))
-            .unwrap_or("statistics.json".to_string());
+            .unwrap_or("output.stat".to_string());
         let expected_record_count = matches.value_of("expected_record_count")
             .map(|item| item.trim().parse::<usize>().unwrap());
         let bin_size = matches.value_of("bin_size")
